@@ -1,0 +1,30 @@
+import { Suspense } from 'react';
+import { Box } from '@mui/material';
+import { Navbar } from '@/components/layout/Navbar';
+import { Footer } from '@/components/layout/Footer';
+import { ProductDetailClient } from '@/components/catalog/ProductDetailClient';
+import { PageLoader } from '@/components/ui/PageLoader';
+
+interface ProductPageProps {
+  params: { id: string };
+}
+
+/**
+ * Product Detail Page (PDP) — server component shell.
+ *
+ * The actual data fetching and interactive elements (add-to-cart, quantity selector)
+ * are handled in ProductDetailClient (client component) to support cart interactions.
+ */
+export default function ProductDetailPage({ params }: ProductPageProps) {
+  return (
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+      <Navbar />
+      <Box component="main" sx={{ maxWidth: 1400, mx: 'auto', px: { xs: 2, md: 3 }, py: 4 }}>
+        <Suspense fallback={<PageLoader />}>
+          <ProductDetailClient productId={params.id} />
+        </Suspense>
+      </Box>
+      <Footer />
+    </Box>
+  );
+}
