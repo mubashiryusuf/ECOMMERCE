@@ -7,7 +7,9 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../prisma/prisma.service';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { User, UserDocument } from '../users/user.schema';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -19,42 +21,44 @@ import { OAuth2Client } from 'google-auth-library';
 @Injectable()
 export class AuthService {
   constructor(
-    private prisma: PrismaService,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
     private jwt: JwtService,
     private config: ConfigService,
   ) {}
 
   async signup(dto: SignupDto) {
-    const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    const existing = await this.userModel.findOne({ email: dto.email.toLowerCase() }).exec();
     if (existing) throw new ConflictException('Email already in use');
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
-    const user = await this.prisma.user.create({
-      data: { email: dto.email, name: dto.name, passwordHash, role: 'CUSTOMER' },
-      select: { id: true, email: true, name: true, role: true, createdAt: true },
+    const user = await this.userModel.create({
+      email: dto.email.toLowerCase(),
+      name: dto.name,
+      passwordHash,
+      role: 'CUSTOMER',
     });
 
-    const token = this.signAccess({ id: user.id, email: user.email, role: user.role });
-    return { token, user };
+    const safeUser = this.toSafeUser(user);
+    const token = this.signAccess(safeUser);
+    return { token, user: safeUser };
   }
 
   async login(dto: LoginDto) {
-    const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    const user = await this.userModel.findOne({ email: dto.email.toLowerCase() }).exec();
     if (!user) throw new UnauthorizedException('Invalid credentials');
 
     const valid = await bcrypt.compare(dto.password, user.passwordHash);
     if (!valid) throw new UnauthorizedException('Invalid credentials');
 
-    const { passwordHash: _omit, ...safeUser } = user;
-    const token = this.signAccess({ id: user.id, email: user.email, role: user.role });
+    const safeUser = this.toSafeUser(user);
+    const token = this.signAccess(safeUser);
     return { token, user: safeUser };
   }
 
   async me(userId: string) {
-    return this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, email: true, name: true, role: true, createdAt: true },
-    });
+    const user = await this.userModel.findById(userId).exec();
+    if (!user) return null;
+    return this.toSafeUser(user);
   }
 
   /**
@@ -62,35 +66,28 @@ export class AuthService {
    *
    * MOCK: In production this token would be emailed. Here it is returned in the
    * response body so the flow can be exercised without an SMTP server.
-   * This is clearly documented in NOTES.md.
    */
   async forgotPassword(dto: ForgotPasswordDto) {
-    const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    const user = await this.userModel.findOne({ email: dto.email.toLowerCase() }).exec();
 
-    // Always respond with the same message to prevent email enumeration
     if (!user) {
       return { message: 'If that email is registered you will receive a reset link.' };
     }
 
     const resetToken = this.jwt.sign(
-      { sub: user.id, email: user.email, type: 'password-reset' },
+      { sub: user._id.toString(), email: user.email, type: 'password-reset' },
       {
         secret: this.config.get<string>('jwt.secret'),
         expiresIn: '15m',
       },
     );
 
-    // MOCK: return the token directly instead of sending an email
     return {
       message: 'If that email is registered you will receive a reset link.',
-      // Only present in non-production environments to support testing
       resetToken: process.env.NODE_ENV !== 'production' ? resetToken : undefined,
     };
   }
 
-  /**
-   * Reset-password: verifies the reset token and updates the password hash.
-   */
   async resetPassword(dto: ResetPasswordDto) {
     let payload: { sub: string; email: string; type: string };
 
@@ -106,14 +103,11 @@ export class AuthService {
       throw new BadRequestException('Reset token is invalid or has expired');
     }
 
-    const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
+    const user = await this.userModel.findById(payload.sub).exec();
     if (!user) throw new NotFoundException('User not found');
 
-    const passwordHash = await bcrypt.hash(dto.newPassword, 10);
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { passwordHash },
-    });
+    user.passwordHash = await bcrypt.hash(dto.newPassword, 10);
+    await user.save();
 
     return { message: 'Password updated successfully. Please log in with your new password.' };
   }
@@ -132,24 +126,38 @@ export class AuthService {
       throw new UnauthorizedException('Invalid Google token');
     }
 
-    const payload = ticket.getPayload();
-    if (!payload?.email) {
+    const googlePayload = ticket.getPayload();
+    if (!googlePayload?.email) {
       throw new UnauthorizedException('Could not retrieve email from Google token');
     }
 
-    const { email, name, sub: googleId } = payload;
+    const { email, name, sub: googleId } = googlePayload;
+    const normalizedEmail = email.toLowerCase();
 
-    let user = await this.prisma.user.findUnique({ where: { email } });
+    let user = await this.userModel.findOne({ email: normalizedEmail }).exec();
     if (!user) {
       const randomHash = await bcrypt.hash(`google_${googleId}_${email}`, 10);
-      user = await this.prisma.user.create({
-        data: { email, name: name ?? email.split('@')[0], passwordHash: randomHash, role: 'CUSTOMER' },
+      user = await this.userModel.create({
+        email: normalizedEmail,
+        name: name ?? email.split('@')[0],
+        passwordHash: randomHash,
+        role: 'CUSTOMER',
       });
     }
 
-    const { passwordHash: _omit, ...safeUser } = user;
-    const token = this.signAccess({ id: user.id, email: user.email, role: user.role });
+    const safeUser = this.toSafeUser(user);
+    const token = this.signAccess(safeUser);
     return { token, user: safeUser };
+  }
+
+  private toSafeUser(user: UserDocument) {
+    return {
+      id: user._id.toString(),
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      createdAt: user.createdAt,
+    };
   }
 
   private signAccess(user: { id: string; email: string; role: string }) {

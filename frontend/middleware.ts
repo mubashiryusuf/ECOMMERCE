@@ -36,9 +36,10 @@ export function middleware(request: NextRequest) {
   const isAdminPath = ADMIN_PATHS.some((p) => pathname.startsWith(p));
   if (isAdminPath) {
     if (!token) {
-      const loginUrl = new URL('/login', request.url);
-      loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
+      const authUrl = new URL('/', request.url);
+      authUrl.searchParams.set('auth', 'login');
+      authUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(authUrl);
     }
     const payload = decodeJwtPayload(token);
     if (!payload || payload['role'] !== 'ADMIN') {
@@ -52,9 +53,10 @@ export function middleware(request: NextRequest) {
   const isAuthRequired = AUTH_REQUIRED_PATHS.some((p) => pathname.startsWith(p));
   if (isAuthRequired) {
     if (!token) {
-      const loginUrl = new URL('/login', request.url);
-      loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
+      const authUrl = new URL('/', request.url);
+      authUrl.searchParams.set('auth', 'login');
+      authUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(authUrl);
     }
     return NextResponse.next();
   }

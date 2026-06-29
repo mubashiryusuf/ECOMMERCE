@@ -57,7 +57,7 @@ apiClient.interceptors.response.use(
       // Clear stale/invalid token and redirect to login
       clearToken();
       if (typeof window !== 'undefined') {
-        window.location.href = '/login';
+        window.location.href = '/?auth=login';
       }
     }
     return Promise.reject(error);

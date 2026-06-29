@@ -1,9 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
+import { Order, OrderDocument } from '../mongoose/schemas/order.schema';
+import { Product, ProductDocument } from '../mongoose/schemas/product.schema';
 
 @Injectable()
 export class SuggestionsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
+    @InjectModel(Product.name) private productModel: Model<ProductDocument>,
+  ) {}
 
   /**
    * Returns personalized product suggestions for the user.
@@ -20,66 +26,86 @@ export class SuggestionsService {
    *   2. Tie-break by createdAt DESC (newest)
    */
   async getSuggestions(userId: string) {
-    // Collect this user's order items
-    const userOrderItems = await this.prisma.orderItem.findMany({
-      where: { order: { userId } },
-      select: { productId: true },
-    });
+    const userOrders = await this.orderModel
+      .find({ userId: new Types.ObjectId(userId) })
+      .lean({ virtuals: true });
 
-    const purchasedProductIds = [...new Set(userOrderItems.map((oi) => oi.productId))];
+    const purchasedProductIds = [
+      ...new Set(
+        (userOrders as any[]).flatMap((o) => o.items.map((i: any) => i.productId.toString())),
+      ),
+    ];
 
-    if (purchasedProductIds.length === 0) {
-      // Cold-start fallback: top-selling in-stock products
-      return this.coldStartSuggestions();
+    if (purchasedProductIds.length === 0) return this.coldStartSuggestions();
+
+    const purchasedProducts = await this.productModel
+      .find({ _id: { $in: purchasedProductIds } })
+      .lean({ virtuals: true });
+    const categories = [...new Set(purchasedProducts.map((p: any) => p.category))];
+
+    const candidates = await this.productModel
+      .find({
+        category: { $in: categories },
+        _id: { $nin: purchasedProductIds },
+        stockQuantity: { $gt: 0 },
+      })
+      .lean({ virtuals: true });
+
+    // Rank by total units sold across all orders
+    const allOrders = await this.orderModel.find().lean({ virtuals: true });
+    const salesMap: Record<string, number> = {};
+    for (const order of allOrders as any[]) {
+      for (const item of order.items) {
+        const pid = item.productId.toString();
+        salesMap[pid] = (salesMap[pid] ?? 0) + item.quantity;
+      }
     }
 
-    // Get categories from purchased products
-    const purchasedProducts = await this.prisma.product.findMany({
-      where: { id: { in: purchasedProductIds } },
-      select: { category: true },
-    });
-
-    const categories = [...new Set(purchasedProducts.map((p) => p.category))];
-
-    // Find in-stock products in those categories, excluding already purchased
-    const candidates = await this.prisma.product.findMany({
-      where: {
-        category: { in: categories },
-        id: { notIn: purchasedProductIds },
-        stockQuantity: { gt: 0 },
-      },
-      include: {
-        orderItems: { select: { quantity: true } },
-      },
-    });
-
-    // Rank by total units sold
     const ranked = candidates
-      .map((p) => ({
+      .map((p: any) => ({
         ...p,
-        totalSold: p.orderItems.reduce((sum, oi) => sum + oi.quantity, 0),
+        id: p._id.toString(),
+        _id: undefined,
+        __v: undefined,
+        totalSold: salesMap[p._id.toString()] ?? 0,
       }))
-      .sort((a, b) => b.totalSold - a.totalSold)
-      .slice(0, 10);
+      .sort((a: any, b: any) => b.totalSold - a.totalSold)
+      .slice(0, 10)
+      .map(({ totalSold: _omit, ...p }: any) => p);
 
-    // Strip internal orderItems from the response
-    return ranked.map(({ orderItems: _omit, ...product }) => product);
+    return ranked;
   }
 
   private async coldStartSuggestions() {
-    const products = await this.prisma.product.findMany({
-      where: { stockQuantity: { gt: 0 } },
-      include: { orderItems: { select: { quantity: true } } },
-    });
+    const allOrders = await this.orderModel.find().lean({ virtuals: true });
+    const salesMap: Record<string, number> = {};
+    for (const order of allOrders as any[]) {
+      for (const item of (order as any).items) {
+        const pid = item.productId.toString();
+        salesMap[pid] = (salesMap[pid] ?? 0) + item.quantity;
+      }
+    }
+
+    const products = await this.productModel
+      .find({ stockQuantity: { $gt: 0 } })
+      .lean({ virtuals: true });
 
     const ranked = products
-      .map((p) => ({
+      .map((p: any) => ({
         ...p,
-        totalSold: p.orderItems.reduce((sum, oi) => sum + oi.quantity, 0),
+        id: p._id.toString(),
+        _id: undefined,
+        __v: undefined,
+        totalSold: salesMap[p._id.toString()] ?? 0,
       }))
-      .sort((a, b) => b.totalSold - a.totalSold || b.createdAt.getTime() - a.createdAt.getTime())
-      .slice(0, 10);
+      .sort(
+        (a: any, b: any) =>
+          b.totalSold - a.totalSold ||
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      )
+      .slice(0, 10)
+      .map(({ totalSold: _omit, ...p }: any) => p);
 
-    return ranked.map(({ orderItems: _omit, ...product }) => product);
+    return ranked;
   }
 }

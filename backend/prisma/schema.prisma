@@ -6,29 +6,12 @@ datasource db {
   provider = "postgresql"
 }
 
-enum Role {
-  CUSTOMER
-  ADMIN
-}
-
 enum OrderStatus {
   PENDING
   PROCESSING
   SHIPPED
   DELIVERED
   CANCELLED
-}
-
-model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  name         String
-  role         Role     @default(CUSTOMER)
-  createdAt    DateTime @default(now())
-
-  cart   Cart?
-  orders Order[]
 }
 
 model Product {
@@ -52,7 +35,6 @@ model Cart {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user  User       @relation(fields: [userId], references: [id])
   items CartItem[]
 }
 
@@ -82,7 +64,6 @@ model Order {
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
-  user  User        @relation(fields: [userId], references: [id])
   items OrderItem[]
 }
 

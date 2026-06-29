@@ -11,9 +11,9 @@
  *    201 (NestJS default for POST), the order has the correct shape, prices are
  *    snapshotted, and the cart is empty afterwards.
  *
- * Technique: PrismaService is obtained via app.get(PrismaService) so we can
- * manipulate stockQuantity directly in the DB to simulate a race condition,
- * without touching the HTTP API for that step.
+ * Technique: The Product Mongoose model is obtained via app.get(getModelToken)
+ * so we can manipulate stockQuantity directly in the DB to simulate a race
+ * condition, without touching the HTTP API for that step.
  *
  * The global prefix is "api" (set in main.ts). Tests mirror the bootstrap
  * config from main.ts so guards and pipes behave identically to the live server.
@@ -24,10 +24,12 @@
 
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { getModelToken } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import * as request from 'supertest';
 import { AppModule } from '../app.module';
 import { HttpExceptionFilter } from '../common/filters/http-exception.filter';
-import { PrismaService } from '../prisma/prisma.service';
+import { Product } from '../mongoose/schemas/product.schema';
 
 const SHIPPING_PAYLOAD = {
   name: 'Test User',
@@ -39,7 +41,7 @@ const SHIPPING_PAYLOAD = {
 
 describe('Checkout stock-overflow guard', () => {
   let app: INestApplication;
-  let prisma: PrismaService;
+  let productModel: Model<Product & Document>;
   let customerToken: string;
   let deskLampId: string;
 
@@ -65,7 +67,7 @@ describe('Checkout stock-overflow guard', () => {
 
     await app.init();
 
-    prisma = app.get(PrismaService);
+    productModel = app.get(getModelToken(Product.name));
 
     // Login as the seeded customer.
     const loginRes = await request(app.getHttpServer())
@@ -84,20 +86,14 @@ describe('Checkout stock-overflow guard', () => {
       .expect(200);
 
     const items: any[] = productsRes.body.items ?? productsRes.body;
-    const deskLamp = items.find((p: any) =>
-      p.name.toLowerCase().includes('desk lamp'),
-    );
+    const deskLamp = items.find((p: any) => p.name.toLowerCase().includes('desk lamp'));
     expect(deskLamp).toBeDefined();
     deskLampId = deskLamp.id;
   });
 
   afterAll(async () => {
     // Restore Desk Lamp stock to seed value so other test runs start clean.
-    await prisma.product.update({
-      where: { id: deskLampId },
-      data: { stockQuantity: 5 },
-    });
-    await prisma.$disconnect();
+    await productModel.findByIdAndUpdate(deskLampId, { stockQuantity: 5 });
     await app.close();
   });
 
@@ -123,10 +119,7 @@ describe('Checkout stock-overflow guard', () => {
 
   it('returns 400 with "Insufficient stock for item" when stock is depleted after cart add (race condition)', async () => {
     // Step A: ensure a known stock level.
-    await prisma.product.update({
-      where: { id: deskLampId },
-      data: { stockQuantity: 2 },
-    });
+    await productModel.findByIdAndUpdate(deskLampId, { stockQuantity: 2 });
 
     // Step B: clean the cart so we start from zero.
     await clearCart();
@@ -140,10 +133,7 @@ describe('Checkout stock-overflow guard', () => {
     expect([200, 201]).toContain(addRes.status);
 
     // Step D: simulate race — another customer buys out the remaining stock.
-    await prisma.product.update({
-      where: { id: deskLampId },
-      data: { stockQuantity: 0 },
-    });
+    await productModel.findByIdAndUpdate(deskLampId, { stockQuantity: 0 });
 
     // Step E: attempt checkout — should be rejected.
     const checkoutRes = await request(app.getHttpServer())
@@ -155,10 +145,6 @@ describe('Checkout stock-overflow guard', () => {
     expect(checkoutRes.status).toBe(400);
     expect(checkoutRes.body.statusCode).toBe(400);
 
-    // The filter stores getResponse() as the "message" field. For a
-    // BadRequestException('string'), getResponse() returns:
-    //   { statusCode: 400, message: "...", error: "Bad Request" }
-    // We stringify the whole body so the assertion works regardless of nesting.
     const bodyString = JSON.stringify(checkoutRes.body);
     expect(bodyString).toContain('Insufficient stock for item');
   });
@@ -167,19 +153,14 @@ describe('Checkout stock-overflow guard', () => {
 
   it('returns 201 with a populated order and clears the cart when stock is sufficient', async () => {
     // Step A: restore ample stock.
-    await prisma.product.update({
-      where: { id: deskLampId },
-      data: { stockQuantity: 5 },
-    });
+    await productModel.findByIdAndUpdate(deskLampId, { stockQuantity: 5 });
 
     // Step B: start from a clean cart.
     await clearCart();
 
     // Look up the current price so we can assert the snapshot later.
-    const product = await prisma.product.findUnique({
-      where: { id: deskLampId },
-    });
-    const expectedUnitPrice = product!.priceCents;
+    const product = await productModel.findById(deskLampId).lean();
+    const expectedUnitPrice = (product as any).priceCents;
 
     // Step C: add Desk Lamp qty=1.
     const addRes = await request(app.getHttpServer())
@@ -224,9 +205,7 @@ describe('Checkout stock-overflow guard', () => {
     expect(cartItems.length).toBe(0);
 
     // Step F: confirm stockQuantity was decremented in the DB.
-    const updatedProduct = await prisma.product.findUnique({
-      where: { id: deskLampId },
-    });
-    expect(updatedProduct!.stockQuantity).toBe(4); // 5 - 1
+    const updatedProduct = await productModel.findById(deskLampId).lean();
+    expect((updatedProduct as any).stockQuantity).toBe(4); // 5 - 1
   });
 });

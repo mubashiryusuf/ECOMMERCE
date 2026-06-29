@@ -1,86 +1,117 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
+import { Cart, CartDocument } from '../mongoose/schemas/cart.schema';
+import { Product, ProductDocument } from '../mongoose/schemas/product.schema';
+import { Order, OrderDocument } from '../mongoose/schemas/order.schema';
 import { CheckoutDto } from './dto/checkout.dto';
 
 @Injectable()
 export class CheckoutService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    @InjectModel(Cart.name) private cartModel: Model<CartDocument>,
+    @InjectModel(Product.name) private productModel: Model<ProductDocument>,
+    @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
+  ) {}
 
   /**
-   * Transactional checkout:
-   * 1. Re-read cart and lock product rows
-   * 2. Validate stock for every item — reject with 409 if any item exceeds stock
-   * 3. Compute totalCents server-side (never trust client total)
-   * 4. Decrement stockQuantity for each product
-   * 5. Create Order + OrderItems (snapshot unitPriceCents + lineTotalCents)
-   * 6. Clear CartItems
-   * 7. Mock payment: paymentRef = `mock_${Date.now()}_${userId}`
-   * 8. Return populated order
+   * Sequential checkout (no replica set in dev, so no native MongoDB transactions).
+   * Operations: validate stock → compute total → create order → decrement stock → clear cart.
+   * MOCK payment: paymentRef = `mock_${Date.now()}_${userId}`
    */
   async checkout(userId: string, dto: CheckoutDto) {
-    return this.prisma.$transaction(async (tx) => {
-      const cart = await tx.cart.findUnique({
-        where: { userId },
-        include: { items: { include: { product: true } } },
-      });
+    const cart = await this.cartModel.findOne({ userId: new Types.ObjectId(userId) });
+    if (!cart || cart.items.length === 0) throw new BadRequestException('Cart is empty');
 
-      if (!cart || cart.items.length === 0) {
-        throw new BadRequestException('Cart is empty');
+    const productIds = (cart.items as any[]).map((i) => i.productId);
+    const products = await this.productModel.find({ _id: { $in: productIds } });
+    const productMap = Object.fromEntries(products.map((p) => [p._id.toString(), p]));
+
+    // Step 1 & 2: Re-validate stock server-side
+    for (const item of cart.items as any[]) {
+      const prod = productMap[item.productId.toString()];
+      if (!prod) throw new BadRequestException(`Product not found: ${item.productId}`);
+      if (item.quantity > prod.stockQuantity) {
+        throw new BadRequestException(`Insufficient stock for "${prod.name}"`);
       }
+    }
 
-      // Step 1 & 2: Re-validate stock
-      for (const item of cart.items) {
-        if (item.quantity > item.product.stockQuantity) {
-          throw new BadRequestException(
-            `Insufficient stock for item "${item.product.name}"`,
-          );
-        }
-      }
+    // Step 3: Compute total server-side — never trust client total
+    const totalCents = (cart.items as any[]).reduce((sum, item) => {
+      return sum + item.quantity * productMap[item.productId.toString()].priceCents;
+    }, 0);
 
-      // Step 3: Compute total server-side
-      const totalCents = cart.items.reduce(
-        (sum, item) => sum + item.quantity * item.product.priceCents,
-        0,
-      );
-
-      // Step 4: Decrement stock
-      for (const item of cart.items) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stockQuantity: { decrement: item.quantity } },
-        });
-      }
-
-      // Step 7: Mock payment reference
-      const paymentRef = `mock_${Date.now()}_${userId}`;
-
-      // Step 5: Create Order + OrderItems (snapshotted prices)
-      const order = await tx.order.create({
-        data: {
-          userId,
-          totalCents,
-          paymentRef,
-          name: dto.name,
-          addressLine1: dto.addressLine1,
-          city: dto.city,
-          postalCode: dto.postalCode,
-          country: dto.country,
-          items: {
-            create: cart.items.map((item) => ({
-              productId: item.productId,
-              quantity: item.quantity,
-              unitPriceCents: item.product.priceCents,
-              lineTotalCents: item.quantity * item.product.priceCents,
-            })),
-          },
-        },
-        include: { items: { include: { product: true } } },
-      });
-
-      // Step 6: Clear cart items
-      await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
-
-      return order;
+    // Step 4 (deferred to after order creation): snapshot prices for order items
+    const paymentRef = `mock_${Date.now()}_${userId}`;
+    const orderItems = (cart.items as any[]).map((item) => {
+      const prod = productMap[item.productId.toString()];
+      return {
+        productId: item.productId,
+        quantity: item.quantity,
+        unitPriceCents: prod.priceCents,
+        lineTotalCents: item.quantity * prod.priceCents,
+      };
     });
+
+    // Step 5: Create Order with snapshotted prices
+    const order = await this.orderModel.create({
+      userId: new Types.ObjectId(userId),
+      totalCents,
+      paymentRef,
+      status: 'PENDING',
+      name: dto.name,
+      addressLine1: dto.addressLine1,
+      city: dto.city,
+      postalCode: dto.postalCode,
+      country: dto.country,
+      items: orderItems,
+    });
+
+    // Step 6: Decrement stock
+    for (const item of cart.items as any[]) {
+      await this.productModel.findByIdAndUpdate(item.productId, {
+        $inc: { stockQuantity: -item.quantity },
+      });
+    }
+
+    // Step 7: Clear cart
+    await this.cartModel.updateOne(
+      { userId: new Types.ObjectId(userId) },
+      { $set: { items: [] } },
+    );
+
+    // Step 8: Return populated order
+    const populated = await this.orderModel.findById(order._id).lean({ virtuals: true });
+    if (!populated) return order;
+
+    const allProducts = await this.productModel
+      .find({ _id: { $in: (populated as any).items.map((i: any) => i.productId) } })
+      .lean({ virtuals: true });
+    const pMap = Object.fromEntries(
+      allProducts.map((p: any) => [p._id.toString(), { ...p, id: p._id.toString(), _id: undefined, __v: undefined }]),
+    );
+
+    return {
+      id: (populated as any)._id.toString(),
+      userId: (populated as any).userId.toString(),
+      status: (populated as any).status,
+      totalCents: (populated as any).totalCents,
+      paymentRef: (populated as any).paymentRef,
+      name: (populated as any).name,
+      addressLine1: (populated as any).addressLine1,
+      city: (populated as any).city,
+      postalCode: (populated as any).postalCode,
+      country: (populated as any).country,
+      createdAt: (populated as any).createdAt,
+      updatedAt: (populated as any).updatedAt,
+      items: ((populated as any).items || []).map((item: any) => ({
+        id: item._id.toString(),
+        productId: item.productId.toString(),
+        quantity: item.quantity,
+        unitPriceCents: item.unitPriceCents,
+        lineTotalCents: item.lineTotalCents,
+        product: pMap[item.productId.toString()] || null,
+      })),
+    };
   }
 }

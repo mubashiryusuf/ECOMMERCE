@@ -1,12 +1,13 @@
 'use client';
 
 import NextLink from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { Badge, Box, IconButton, Menu, MenuItem, Typography, InputBase } from '@mui/material';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useCart } from '@/lib/hooks/useCart';
 import { useAuthStore } from '@/store/authStore';
+import { useUiStore } from '@/store/uiStore';
 import { AuthDrawer } from './AuthDrawer';
 import { CartDrawer } from '../cart/CartDrawer';
 
@@ -77,6 +78,7 @@ const getNavLinkSx = (highlight?: boolean) => ({
 export function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
+  const isAdminPath = pathname?.startsWith('/admin') ?? false;
   const { user, isAuthenticated, logout } = useAuth();
   const { itemCount } = useCart();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
@@ -84,6 +86,25 @@ export function Navbar() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [pendingCart, setPendingCart] = useState(false);
+
+  const searchParams = useSearchParams();
+  const { authPromptOpen, redirectAfterAuth, openAuthPrompt, closeAuthPrompt } = useUiStore();
+
+  // Open auth drawer when URL has ?auth=login (e.g. after middleware bounce)
+  useEffect(() => {
+    if (searchParams.get('auth') === 'login') {
+      const redirect = searchParams.get('redirect') ?? undefined;
+      openAuthPrompt(redirect);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Role-based redirect: send admin users to the admin panel automatically.
+  // Covers both fresh logins and page refreshes with an existing session.
+  useEffect(() => {
+    if (user?.role === 'ADMIN' && !isAdminPath) {
+      router.replace('/admin');
+    }
+  }, [user?.role]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAccountClick = (event: React.MouseEvent<HTMLElement>) => {
     if (isAuthenticated) {
@@ -106,7 +127,6 @@ export function Navbar() {
     }
   };
 
-  const isAdminPath = pathname?.startsWith('/admin');
   if (isAdminPath) return null;
 
   return (
@@ -269,13 +289,15 @@ export function Navbar() {
 
         {/* Auth drawer (non-authenticated) */}
         <AuthDrawer
-          open={drawerOpen}
+          open={drawerOpen || authPromptOpen}
           onClose={() => {
             setDrawerOpen(false);
+            closeAuthPrompt();
             if (!isAuthenticated) setPendingCart(false);
           }}
           onAuthSuccess={() => {
-            // Redirect admin to panel immediately after login
+            setDrawerOpen(false);
+            closeAuthPrompt();
             const { user: freshUser } = useAuthStore.getState();
             if (freshUser?.role === 'ADMIN') {
               router.push('/admin');
@@ -284,7 +306,9 @@ export function Navbar() {
             if (pendingCart) {
               setPendingCart(false);
               setCartOpen(true);
+              return;
             }
+            router.push(redirectAfterAuth ?? '/');
           }}
         />
 

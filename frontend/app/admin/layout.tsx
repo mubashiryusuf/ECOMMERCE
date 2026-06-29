@@ -11,11 +11,12 @@ interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
-const SIDEBAR_WIDTH = 260;
+const SIDEBAR_WIDTH = 230;
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const router = useRouter();
   const { user, isLoading, loadUser } = useAuthStore();
+  const hasToken = getToken();
 
   useEffect(() => {
     loadUser();
@@ -34,7 +35,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     }
   }, [user, isLoading, router]);
 
-  if (isLoading) {
+  // Show spinner while token exists but user is not yet resolved (loadUser in flight)
+  if (isLoading || (!user && hasToken)) {
     return (
       <Box
         sx={{
@@ -49,8 +51,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     );
   }
 
+  // No token and no user — redirect effect is in progress; render nothing briefly
   if (!user || user.role !== 'ADMIN') {
-    // Return null while redirect is in progress
     return null;
   }
 

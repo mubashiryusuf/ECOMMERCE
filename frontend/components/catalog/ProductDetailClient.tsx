@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import NextLink from 'next/link';
 import { Box, Typography, Alert, Grid, CircularProgress } from '@mui/material';
-import { productsApi } from '@/lib/api';
+import { productsApi, suggestionsApi } from '@/lib/api';
 import { useCart } from '@/lib/hooks/useCart';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useSnackbar } from 'notistack';
@@ -12,6 +12,7 @@ import { ProductCard } from './ProductCard';
 import { formatPrice } from '@/utils/formatters';
 import type { Product } from '@/types';
 import { useRouter } from 'next/navigation';
+import { useUiStore } from '@/store/uiStore';
 
 interface ProductDetailClientProps {
   productId: string;
@@ -22,6 +23,7 @@ export function ProductDetailClient({ productId }: ProductDetailClientProps) {
   const [related, setRelated] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<Product[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
 
@@ -29,25 +31,35 @@ export function ProductDetailClient({ productId }: ProductDetailClientProps) {
   const { isAuthenticated } = useAuth();
   const { enqueueSnackbar } = useSnackbar();
   const router = useRouter();
+  const { openAuthPrompt } = useUiStore();
 
   useEffect(() => {
     setIsLoading(true);
-    Promise.all([productsApi.getById(productId), productsApi.getRelated(productId)])
-      .then(([prod, rel]) => {
+    const personalizedFetch = isAuthenticated
+      ? suggestionsApi.getPersonalized()
+      : Promise.resolve([] as Product[]);
+
+    Promise.all([
+      productsApi.getById(productId),
+      productsApi.getRelated(productId),
+      personalizedFetch,
+    ])
+      .then(([prod, rel, sugg]) => {
         setProduct(prod);
         setRelated(rel);
+        setSuggestions(sugg);
         setQuantity(1);
       })
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : 'Product not found');
       })
       .finally(() => setIsLoading(false));
-  }, [productId]);
+  }, [productId, isAuthenticated]);
 
   const handleAddToCart = async () => {
     if (!product) return;
     if (!isAuthenticated) {
-      router.push(`/login?redirect=/products/${productId}`);
+      openAuthPrompt(`/products/${productId}`);
       return;
     }
     setIsAdding(true);
@@ -348,38 +360,60 @@ export function ProductDetailClient({ productId }: ProductDetailClientProps) {
         </Grid>
       </Grid>
 
-      {/* Related products */}
-      {related.length > 0 && (
-        <Box sx={{ mt: 7 }}>
-          <Box sx={{ mb: 4 }}>
-            <Typography
+      {/* You May Also Like — personalized for auth'd users, contextual for guests */}
+      {(() => {
+        const personalizedFiltered = suggestions.filter((p) => p.id !== productId);
+        const isPersonalized = isAuthenticated && personalizedFiltered.length > 0;
+        const displayed = isPersonalized ? personalizedFiltered.slice(0, 4) : related.slice(0, 4);
+        if (displayed.length === 0) return null;
+        return (
+          <Box sx={{ mt: 7 }}>
+            <Box sx={{ mb: 4 }}>
+              <Typography
+                sx={{
+                  fontFamily: '"Saira Condensed", sans-serif',
+                  fontWeight: 800,
+                  fontStyle: 'italic',
+                  textTransform: 'uppercase',
+                  fontSize: '28px',
+                  m: 0,
+                  color: '#18181b',
+                }}
+              >
+                You May Also Like
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: '10px' }}>
+                <Box sx={{ width: 54, height: 4, background: '#f2622a', borderRadius: 1 }} />
+                {isPersonalized && (
+                  <Box
+                    sx={{
+                      fontFamily: '"Manrope", sans-serif',
+                      fontSize: '11.5px',
+                      fontWeight: 700,
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase',
+                      color: '#f2622a',
+                    }}
+                  >
+                    Personalized for you
+                  </Box>
+                )}
+              </Box>
+            </Box>
+            <Box
               sx={{
-                fontFamily: '"Saira Condensed", sans-serif',
-                fontWeight: 800,
-                fontStyle: 'italic',
-                textTransform: 'uppercase',
-                fontSize: '28px',
-                m: 0,
-                color: '#18181b',
+                display: 'grid',
+                gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)', md: 'repeat(4, 1fr)' },
+                gap: 2.5,
               }}
             >
-              You May Also Like
-            </Typography>
-            <Box sx={{ width: 54, height: 4, background: '#f2622a', borderRadius: 1, mt: '10px' }} />
+              {displayed.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </Box>
           </Box>
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)', md: 'repeat(4, 1fr)' },
-              gap: 2.5,
-            }}
-          >
-            {related.slice(0, 4).map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </Box>
-        </Box>
-      )}
+        );
+      })()}
     </Box>
   );
 }
