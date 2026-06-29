@@ -10,12 +10,84 @@ import {
   MenuItem,
 } from '@mui/material';
 import { Visibility } from '@mui/icons-material';
+import { useSnackbar } from 'notistack';
 import { adminApi } from '@/lib/api';
 import { PageLoader } from '@/components/ui/PageLoader';
 import { OrderStatusBadge } from '@/components/orders/OrderStatusBadge';
 import { formatPrice, formatDate } from '@/utils/formatters';
 import { OrderStatus } from '@/types';
 import type { Order } from '@/types';
+
+const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+  [OrderStatus.PENDING]: [OrderStatus.PROCESSING, OrderStatus.CANCELLED],
+  [OrderStatus.PROCESSING]: [OrderStatus.SHIPPED, OrderStatus.CANCELLED],
+  [OrderStatus.SHIPPED]: [OrderStatus.DELIVERED, OrderStatus.CANCELLED],
+  [OrderStatus.DELIVERED]: [],
+  [OrderStatus.CANCELLED]: [],
+};
+
+function InlineStatusSelect({
+  order,
+  onUpdate,
+}: {
+  order: Order;
+  onUpdate: (orderId: string, newStatus: OrderStatus) => void;
+}) {
+  const [isUpdating, setIsUpdating] = useState(false);
+  const { enqueueSnackbar } = useSnackbar();
+  const allowed = ALLOWED_TRANSITIONS[order.status] ?? [];
+
+  const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newStatus = e.target.value as OrderStatus;
+    if (!newStatus) return;
+    setIsUpdating(true);
+    try {
+      await adminApi.updateOrderStatus(order.id, { status: newStatus });
+      onUpdate(order.id, newStatus);
+      enqueueSnackbar(`Order ${order.id.slice(-6).toUpperCase()} → ${newStatus}`, { variant: 'success' });
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        'Status update failed';
+      enqueueSnackbar(msg, { variant: 'error' });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+      <OrderStatusBadge status={order.status} />
+      {allowed.length > 0 && (
+        <Box
+          component="select"
+          disabled={isUpdating}
+          onChange={handleChange}
+          value=""
+          sx={{
+            height: 26,
+            border: '1px solid #ededf0',
+            borderRadius: '6px',
+            background: '#fff',
+            fontFamily: '"Saira", sans-serif',
+            fontWeight: 600,
+            fontSize: '11px',
+            color: '#52525b',
+            cursor: isUpdating ? 'not-allowed' : 'pointer',
+            px: '4px',
+            outline: 'none',
+            '&:hover:not(:disabled)': { borderColor: '#f2622a' },
+          }}
+        >
+          <option value="" disabled>Change</option>
+          {allowed.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </Box>
+      )}
+    </Box>
+  );
+}
 
 const STATUS_FILTER_OPTIONS = [
   { value: '', label: 'All Statuses' },
@@ -45,6 +117,12 @@ export default function AdminOrdersPage() {
   const filteredOrders = statusFilter
     ? orders.filter((o) => o.status === statusFilter)
     : orders;
+
+  const handleStatusUpdate = (orderId: string, newStatus: OrderStatus) => {
+    setOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
+    );
+  };
 
   return (
     <Box sx={{ p: { xs: 2, md: '28px 30px' } }}>
@@ -111,7 +189,7 @@ export default function AdminOrdersPage() {
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: '1fr 180px 120px 120px 110px 48px',
+              gridTemplateColumns: '1fr 180px 120px 120px 170px 48px',
               px: '20px',
               py: '12px',
               background: '#f7f7f8',
@@ -148,7 +226,7 @@ export default function AdminOrdersPage() {
               key={order.id}
               sx={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 180px 120px 120px 110px 48px',
+                gridTemplateColumns: '1fr 180px 120px 120px 170px 48px',
                 px: '20px',
                 py: '14px',
                 alignItems: 'center',
@@ -181,7 +259,7 @@ export default function AdminOrdersPage() {
                 {formatPrice(order.totalCents)}
               </Typography>
 
-              <OrderStatusBadge status={order.status} />
+              <InlineStatusSelect order={order} onUpdate={handleStatusUpdate} />
 
               <Box
                 component={NextLink}

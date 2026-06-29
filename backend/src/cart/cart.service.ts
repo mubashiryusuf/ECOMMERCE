@@ -21,32 +21,31 @@ export class CartService {
     });
   }
 
-  async getCart(userId: string) {
-    // TODO: return cart with items, line totals, order total
+  /** Builds and returns the full cart response shape expected by the frontend. */
+  private async buildCartResponse(userId: string) {
     const cart = await this.prisma.cart.findUnique({
       where: { userId },
-      include: {
-        items: {
-          include: { product: true },
-        },
-      },
+      include: { items: { include: { product: true } } },
     });
 
     if (!cart) {
-      return { id: null, userId, items: [], orderTotal: 0 };
+      return { id: null, userId, items: [], totalCents: 0 };
     }
 
     const items = cart.items.map((item) => ({
       ...item,
-      lineTotal: item.quantity * item.product.priceCents,
+      lineTotalCents: item.quantity * item.product.priceCents,
     }));
 
-    const orderTotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
-    return { ...cart, items, orderTotal };
+    const totalCents = items.reduce((sum, i) => sum + i.lineTotalCents, 0);
+    return { ...cart, items, totalCents };
+  }
+
+  async getCart(userId: string) {
+    return this.buildCartResponse(userId);
   }
 
   async addItem(userId: string, dto: AddItemDto) {
-    // TODO: upsert cart item, validate stock
     const product = await this.prisma.product.findUnique({ where: { id: dto.productId } });
     if (!product) throw new NotFoundException(`Product ${dto.productId} not found`);
 
@@ -61,16 +60,16 @@ export class CartService {
       throw new ConflictException(`Insufficient stock. Available: ${product.stockQuantity}`);
     }
 
-    return this.prisma.cartItem.upsert({
+    await this.prisma.cartItem.upsert({
       where: { cartId_productId: { cartId: cart.id, productId: dto.productId } },
       update: { quantity: newQty },
       create: { cartId: cart.id, productId: dto.productId, quantity: dto.quantity },
-      include: { product: true },
     });
+
+    return this.buildCartResponse(userId);
   }
 
   async updateItem(userId: string, itemId: string, dto: UpdateItemDto) {
-    // TODO: update quantity (0 = remove), validate stock, ownership check
     const item = await this.prisma.cartItem.findUnique({
       where: { id: itemId },
       include: { cart: true, product: true },
@@ -81,22 +80,21 @@ export class CartService {
 
     if (dto.quantity === 0) {
       await this.prisma.cartItem.delete({ where: { id: itemId } });
-      return { deleted: true };
+    } else {
+      if (dto.quantity > item.product.stockQuantity) {
+        throw new ConflictException(`Insufficient stock. Available: ${item.product.stockQuantity}`);
+      }
+
+      await this.prisma.cartItem.update({
+        where: { id: itemId },
+        data: { quantity: dto.quantity },
+      });
     }
 
-    if (dto.quantity > item.product.stockQuantity) {
-      throw new ConflictException(`Insufficient stock. Available: ${item.product.stockQuantity}`);
-    }
-
-    return this.prisma.cartItem.update({
-      where: { id: itemId },
-      data: { quantity: dto.quantity },
-      include: { product: true },
-    });
+    return this.buildCartResponse(userId);
   }
 
   async removeItem(userId: string, itemId: string) {
-    // TODO: delete item, ownership check
     const item = await this.prisma.cartItem.findUnique({
       where: { id: itemId },
       include: { cart: true },
@@ -106,6 +104,6 @@ export class CartService {
     if (item.cart.userId !== userId) throw new ForbiddenException('Not your cart item');
 
     await this.prisma.cartItem.delete({ where: { id: itemId } });
-    return { deleted: true };
+    return this.buildCartResponse(userId);
   }
 }

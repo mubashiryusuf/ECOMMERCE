@@ -132,7 +132,7 @@ export default function SignupPage() {
             maxWidth: 340,
           }}
         >
-          Create your free account and shop premium gear from the world's top performance brands.
+          Create your free account and shop premium gear from the world&apos;s top performance brands.
         </Typography>
       </Box>
 

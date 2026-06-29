@@ -19,6 +19,11 @@ export class AdminOrdersController {
     return this.service.getAll();
   }
 
+  @Get(':id')
+  getById(@Param('id') id: string) {
+    return this.service.getById(id);
+  }
+
   @Patch(':id/status')
   updateStatus(@Param('id') id: string, @Body() dto: UpdateStatusDto) {
     return this.service.updateStatus(id, dto);

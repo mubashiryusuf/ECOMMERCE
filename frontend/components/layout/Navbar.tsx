@@ -10,7 +10,7 @@ import { useAuthStore } from '@/store/authStore';
 import { AuthDrawer } from './AuthDrawer';
 import { CartDrawer } from '../cart/CartDrawer';
 
-const NAV_LINKS = [
+const NAV_LINKS: { label: string; href: string; highlight?: boolean }[] = [
   { label: 'Shop By Brands', href: '/?category=Brands' },
   { label: 'Men', href: '/?category=Men' },
   { label: 'Women', href: '/?category=Women' },
@@ -52,6 +52,27 @@ function ApexLogo() {
     </Box>
   );
 }
+
+const getNavLinkSx = (highlight?: boolean) => ({
+  display: 'flex',
+  alignItems: 'center',
+  px: { xs: 1.5, md: 2 },
+  py: '11px',
+  fontFamily: '"Saira", sans-serif',
+  fontWeight: 700,
+  fontSize: { xs: '11px', md: '12px' },
+  letterSpacing: '0.04em',
+  textTransform: 'uppercase' as const,
+  color: highlight ? '#f2622a' : '#a1a1aa',
+  textDecoration: 'none',
+  borderBottom: '2px solid transparent',
+  transition: 'color 0.15s, background 0.15s',
+  '&:hover': {
+    color: '#fff',
+    background: 'rgba(242,98,42,0.16)',
+    borderBottomColor: '#f2622a',
+  },
+});
 
 export function Navbar() {
   const router = useRouter();
@@ -335,26 +356,7 @@ export function Navbar() {
               <Box
                 component={NextLink}
                 href={link.href}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  px: { xs: 1.5, md: 2 },
-                  py: '11px',
-                  fontFamily: '"Saira", sans-serif',
-                  fontWeight: 700,
-                  fontSize: { xs: '11px', md: '12px' },
-                  letterSpacing: '0.04em',
-                  textTransform: 'uppercase',
-                  color: (link as { highlight?: boolean }).highlight ? '#f2622a' : '#a1a1aa',
-                  textDecoration: 'none',
-                  borderBottom: '2px solid transparent',
-                  transition: 'color 0.15s, background 0.15s',
-                  '&:hover': {
-                    color: '#fff',
-                    background: 'rgba(242,98,42,0.16)',
-                    borderBottomColor: '#f2622a',
-                  },
-                }}
+                sx={getNavLinkSx(link.highlight)}
               >
                 {link.label}
               </Box>

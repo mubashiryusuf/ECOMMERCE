@@ -232,6 +232,11 @@ export const adminApi = {
     return data;
   },
 
+  getOrderById: async (id: string): Promise<Order> => {
+    const { data } = await apiClient.get<Order>(`/admin/orders/${id}`);
+    return data;
+  },
+
   // Dashboard
   getDashboardStats: async (): Promise<DashboardStats> => {
     const { data } = await apiClient.get<DashboardStats>('/admin/dashboard/stats');

@@ -12,7 +12,7 @@ import { NextRequest, NextResponse } from 'next/server';
  * an extra network round-trip on every navigation.
  */
 
-const AUTH_REQUIRED_PATHS = ['/checkout', '/orders'];
+const AUTH_REQUIRED_PATHS = ['/cart', '/checkout', '/orders'];
 const ADMIN_PATHS = ['/admin'];
 
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
@@ -51,7 +51,9 @@ export function middleware(request: NextRequest) {
   const isAuthRequired = AUTH_REQUIRED_PATHS.some((p) => pathname.startsWith(p));
   if (isAuthRequired) {
     if (!token) {
-      return NextResponse.redirect(new URL('/', request.url));
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(loginUrl);
     }
     return NextResponse.next();
   }
@@ -61,6 +63,7 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    '/cart/:path*',
     '/checkout/:path*',
     '/orders/:path*',
     '/admin/:path*',

@@ -218,6 +218,22 @@ function SignUpForm({ onSuccess, onAuthSuccess }: { onSuccess: () => void; onAut
   );
 }
 
+const getTabSx = (active: boolean) => ({
+  flex: 1,
+  py: '11px',
+  border: 'none',
+  background: 'transparent',
+  fontFamily: '"Saira", sans-serif',
+  fontWeight: 700,
+  fontSize: '13px',
+  textTransform: 'uppercase' as const,
+  letterSpacing: '0.06em',
+  color: active ? '#18181b' : '#a1a1aa',
+  cursor: 'pointer' as const,
+  borderBottom: active ? '2px solid #f2622a' : '2px solid transparent',
+  transition: 'color 0.15s, border-color 0.15s',
+});
+
 export function AuthDrawer({ open, onClose, onAuthSuccess }: AuthDrawerProps) {
   const [tab, setTab] = useState<'signin' | 'signup'>('signin');
   const { loginWithGoogle } = useAuthStore();
@@ -226,21 +242,7 @@ export function AuthDrawer({ open, onClose, onAuthSuccess }: AuthDrawerProps) {
     <Box
       component="button"
       onClick={() => setTab(id)}
-      sx={{
-        flex: 1,
-        py: '11px',
-        border: 'none',
-        background: 'transparent',
-        fontFamily: '"Saira", sans-serif',
-        fontWeight: 700,
-        fontSize: '13px',
-        textTransform: 'uppercase',
-        letterSpacing: '0.06em',
-        color: tab === id ? '#18181b' : '#a1a1aa',
-        cursor: 'pointer',
-        borderBottom: tab === id ? '2px solid #f2622a' : '2px solid transparent',
-        transition: 'color 0.15s, border-color 0.15s',
-      }}
+      sx={getTabSx(tab === id)}
     >
       {label}
     </Box>

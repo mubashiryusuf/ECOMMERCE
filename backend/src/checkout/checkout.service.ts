@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  BadRequestException,
-  ConflictException,
-} from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutDto } from './dto/checkout.dto';
 
@@ -35,8 +31,8 @@ export class CheckoutService {
       // Step 1 & 2: Re-validate stock
       for (const item of cart.items) {
         if (item.quantity > item.product.stockQuantity) {
-          throw new ConflictException(
-            `Insufficient stock for "${item.product.name}". Available: ${item.product.stockQuantity}, requested: ${item.quantity}`,
+          throw new BadRequestException(
+            `Insufficient stock for item "${item.product.name}"`,
           );
         }
       }

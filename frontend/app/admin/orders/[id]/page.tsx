@@ -12,7 +12,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { ArrowBack } from '@mui/icons-material';
-import { adminApi, ordersApi } from '@/lib/api';
+import { adminApi } from '@/lib/api';
 import { OrderStatusBadge } from '@/components/orders/OrderStatusBadge';
 import { PageLoader } from '@/components/ui/PageLoader';
 import { formatPrice, formatDateTime } from '@/utils/formatters';
@@ -39,8 +39,8 @@ export default function AdminOrderDetailPage() {
 
   useEffect(() => {
     if (!params?.id) return;
-    ordersApi
-      .getById(params.id)
+    adminApi
+      .getOrderById(params.id)
       .then((o) => {
         setOrder(o);
         setNewStatus('');

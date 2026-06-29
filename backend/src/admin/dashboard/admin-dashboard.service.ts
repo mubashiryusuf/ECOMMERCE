@@ -42,11 +42,19 @@ export class AdminDashboardService {
     });
     const productMap = Object.fromEntries(products.map((p) => [p.id, p]));
 
-    const topProducts = topProductsRaw.map((r) => ({
-      product: productMap[r.productId],
-      totalUnitsSold: r._sum.quantity ?? 0,
-    }));
+    const topProducts = topProductsRaw;
 
-    return { totalSalesCents, ordersByStatus, topProducts };
+    return {
+      totalSalesCents,
+      orderCountByStatus: ordersByStatus,
+      topProducts: topProducts
+        .filter((r) => !!productMap[r.productId])
+        .map((r) => ({
+          productId: r.productId,
+          name: productMap[r.productId].name,
+          unitsSold: r._sum.quantity ?? 0,
+          revenueCents: (r._sum.quantity ?? 0) * productMap[r.productId].priceCents,
+        })),
+    };
   }
 }

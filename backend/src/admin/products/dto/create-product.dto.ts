@@ -1,21 +1,38 @@
-import { IsString, IsInt, IsUrl, Min, IsOptional } from 'class-validator';
+import {
+  IsString,
+  IsInt,
+  IsUrl,
+  Min,
+  MinLength,
+  MaxLength,
+  IsNotEmpty,
+} from 'class-validator';
 
 export class CreateProductDto {
   @IsString()
+  @IsNotEmpty()
+  @MinLength(2)
+  @MaxLength(120)
   name: string;
 
   @IsString()
+  @IsNotEmpty()
+  @MinLength(10)
+  @MaxLength(2000)
   description: string;
 
-  /** Price in integer cents — never float */
+  /** Price in integer cents — must be at least 1 cent (no free products) */
   @IsInt()
-  @Min(0)
+  @Min(1)
   priceCents: number;
 
   @IsUrl()
   imageUrl: string;
 
   @IsString()
+  @IsNotEmpty()
+  @MinLength(2)
+  @MaxLength(60)
   category: string;
 
   @IsInt()
