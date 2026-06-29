@@ -26,7 +26,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from '../app.module';
 import { HttpExceptionFilter } from '../common/filters/http-exception.filter';
 import { Product } from '../mongoose/schemas/product.schema';

@@ -292,28 +292,31 @@ export function AuthDrawer({ open, onClose, onAuthSuccess }: AuthDrawerProps) {
         </Box>
       </Box>
 
-      {/* Google login */}
-      <Box sx={{ mb: 2 }}>
-        <GoogleLogin
-          onSuccess={(cr) => {
-            if (cr.credential) {
-              loginWithGoogle(cr.credential)
-                .then(() => { onClose(); onAuthSuccess?.(); })
-                .catch(() => {});
-            }
-          }}
-          onError={() => {}}
-          width="344"
-          size="large"
-          text="signin_with"
-          shape="rectangular"
-        />
-      </Box>
+      {/* Google login — only shown when NEXT_PUBLIC_GOOGLE_CLIENT_ID is configured */}
+      {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
+        <>
+          <Box sx={{ mb: 2 }}>
+            <GoogleLogin
+              onSuccess={(cr) => {
+                if (cr.credential) {
+                  loginWithGoogle(cr.credential)
+                    .then(() => { onClose(); onAuthSuccess?.(); })
+                    .catch(() => {});
+                }
+              }}
+              onError={() => {}}
+              width="344"
+              size="large"
+              text="signin_with"
+              shape="rectangular"
+            />
+          </Box>
 
-      {/* Divider */}
-      <Divider sx={{ my: 2 }}>
-        <Box sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '12px', color: '#a1a1aa', px: 1 }}>or</Box>
-      </Divider>
+          <Divider sx={{ my: 2 }}>
+            <Box sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '12px', color: '#a1a1aa', px: 1 }}>or</Box>
+          </Divider>
+        </>
+      )}
 
       {/* Tabs */}
       <Box sx={{ display: 'flex', borderBottom: '1px solid #e7e7ea', mb: 3 }}>

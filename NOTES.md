@@ -172,6 +172,28 @@ The "Personalized for you" badge appears inline next to the orange accent bar �
 
 ---
 
+## Phase N — Brands, Contact, Toasts, Brand Filter (2026-06-30)
+
+**Built:**
+- **Brands module** (backend + frontend): admin can create/edit/delete brands with image upload; `Shop By Brands` section on homepage; brand filter propagated through catalog URL params → API query → MongoDB filter on `Product.brand`
+- **Contact queries**: public `POST /contact` form; admin `GET /admin/contact-queries` inbox with status toggle (NEW → REVIEWED)
+- **Login/logout snackbars**: notistack `enqueueSnackbar` on successful sign-in, sign-up, and sign-out
+- **Brand dropdown in admin product form**: optional select populated from the brands API; submitted as `brand` field on create/update
+
+**Agent mistakes caught:**
+
+1. **Brand images not resolving on homepage** — `ShopByBrands` used `brand.imageUrl` directly as `src`. Uploaded images are stored as relative paths (e.g. `/uploads/brands/file.jpg`) pointing to the NestJS backend (port 3001), not Next.js (port 3000). Fix: added `resolveImageUrl()` utility that prepends the backend origin to relative paths.
+
+2. **Login form causing page refresh on wrong password** — `<Box component="form">` (MUI) does not reliably call `preventDefault` in Next.js 14 App Router. Fix: replaced with native `<form onSubmit={(e) => { e.preventDefault(); handleSubmit(onSubmit)(e); }}>`. Also added `type="button"` to close and tab buttons.
+
+3. **"Cannot GET /api/admin/brands"** — NestJS watch mode had started before `BrandsModule`/`ContactModule` were registered. Fix: restart `npm run start:dev`. Learned: always restart the backend after module registration changes to `app.module.ts`.
+
+4. **Google OAuth "Error 400: invalid_request — Missing required parameter: client_id"** — `GoogleOAuthProvider` initialized with `clientId=""` because `NEXT_PUBLIC_GOOGLE_CLIENT_ID` was not set in `.env.local`. Fix: made `GoogleLogin` conditional — only renders when env var is truthy. Documented in `.env.example`.
+
+**Verification:** `npx tsc --noEmit` clean on both sides; Explore agent full import audit — zero issues.
+
+---
+
 ## Assumptions & Trade-offs
 
 - **MongoDB backend correction:** Nest watch mode surfaced a stale Prisma/Postgres service (`backend/src/prisma/prisma.service.ts`) that imported `@prisma/client`, `@prisma/adapter-pg`, and `pg`, even though the active backend is implemented with Mongoose/MongoDB. The service was changed to a no-op compatibility provider so TypeScript no longer requires Postgres dependencies or tries to open a Postgres connection.
@@ -179,3 +201,6 @@ The "Personalized for you" badge appears inline next to the orange accent bar �
 - **Forgot-password mock:** No SMTP server wired up. Token returned in body in dev/test. Clearly mocked and documented.
 - **Stock validation:** Enforced at cart-add time and again at checkout (transactional). Stock cannot go negative.
 - **Price snapshots:** `unitPriceCents` captured at order creation time — live product price changes do not affect existing orders.
+- **Google OAuth:** Optional — the Sign In with Google button is hidden unless `NEXT_PUBLIC_GOOGLE_CLIENT_ID` is set. Setting up a Google OAuth 2.0 client (GCP Console → APIs & Services → Credentials) and adding the client ID to `frontend/.env.local` enables it.
+- **Brand stored as string on Product:** `brand` field stores the brand name, not a foreign key. Simple, avoids join complexity. If a brand is renamed, existing products are not auto-updated — acceptable at this scale.
+- **Tests:** Integration tests (not unit tests) — the real NestJS app + real MongoDB, no mocks. This matches the spirit of §13 ("meaningful tests") but requires a running MongoDB and the seed to have been applied before `npm test`.
