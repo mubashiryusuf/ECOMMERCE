@@ -7,6 +7,7 @@ import { Badge, Box, IconButton, Menu, MenuItem, Typography, InputBase } from '@
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useCart } from '@/lib/hooks/useCart';
 import { AuthDrawer } from './AuthDrawer';
+import { CartDrawer } from '../cart/CartDrawer';
 
 const NAV_LINKS = [
   { label: 'Shop By Brands', href: '/?category=Brands' },
@@ -59,6 +60,7 @@ export function Navbar() {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
 
   const handleAccountClick = (event: React.MouseEvent<HTMLElement>) => {
     if (isAuthenticated) {
@@ -198,8 +200,7 @@ export function Navbar() {
 
           {/* Cart */}
           <IconButton
-            component={NextLink}
-            href="/cart"
+            onClick={() => setCartOpen(true)}
             sx={{
               position: 'relative',
               width: 44,
@@ -238,6 +239,9 @@ export function Navbar() {
 
         {/* Auth drawer (non-authenticated) */}
         <AuthDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+
+        {/* Cart drawer */}
+        <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
 
         {/* Account dropdown (authenticated) */}
         <Menu
