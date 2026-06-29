@@ -6,14 +6,15 @@ import { useState } from 'react';
 import { Badge, Box, IconButton, Menu, MenuItem, Typography, InputBase } from '@mui/material';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useCart } from '@/lib/hooks/useCart';
+import { AuthDrawer } from './AuthDrawer';
 
 const NAV_LINKS = [
-  { label: 'New In', href: '/?sort=newest' },
+  { label: 'Shop By Brands', href: '/?category=Brands' },
   { label: 'Men', href: '/?category=Men' },
   { label: 'Women', href: '/?category=Women' },
-  { label: 'Footwear', href: '/?category=Footwear' },
-  { label: 'Apparel', href: '/?category=Apparel' },
-  { label: 'Equipment', href: '/?category=Equipment' },
+  { label: 'Kids', href: '/?category=Kids' },
+  { label: 'Accessories & Equipment', href: '/?category=Equipment' },
+  { label: 'New Arrivals', href: '/?sort=newest', highlight: true },
   { label: 'Sale', href: '/?sort=price_asc' },
 ];
 
@@ -57,9 +58,14 @@ export function Navbar() {
   const { itemCount } = useCart();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const handleAccountClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
+    if (isAuthenticated) {
+      setAnchorEl(event.currentTarget);
+    } else {
+      setDrawerOpen(true);
+    }
   };
   const handleMenuClose = () => setAnchorEl(null);
   const handleLogout = () => {
@@ -174,7 +180,7 @@ export function Navbar() {
 
           {/* Account */}
           <IconButton
-            onClick={isAuthenticated ? handleAccountClick : () => router.push('/login')}
+            onClick={handleAccountClick}
             sx={{
               width: 44,
               height: 44,
@@ -230,7 +236,10 @@ export function Navbar() {
           </IconButton>
         </Box>
 
-        {/* Account dropdown */}
+        {/* Auth drawer (non-authenticated) */}
+        <AuthDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+
+        {/* Account dropdown (authenticated) */}
         <Menu
           anchorEl={anchorEl}
           open={Boolean(anchorEl)}
@@ -298,14 +307,14 @@ export function Navbar() {
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
-                  px: 2,
+                  px: { xs: 1.5, md: 2 },
                   py: '11px',
                   fontFamily: '"Saira", sans-serif',
                   fontWeight: 700,
-                  fontSize: '13px',
+                  fontSize: { xs: '11px', md: '12px' },
                   letterSpacing: '0.04em',
                   textTransform: 'uppercase',
-                  color: '#a1a1aa',
+                  color: (link as { highlight?: boolean }).highlight ? '#f2622a' : '#a1a1aa',
                   textDecoration: 'none',
                   borderBottom: '2px solid transparent',
                   transition: 'color 0.15s, background 0.15s',

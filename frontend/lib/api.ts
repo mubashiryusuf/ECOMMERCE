@@ -101,6 +101,11 @@ export const authApi = {
     });
     return data;
   },
+
+  googleAuth: async (credential: string): Promise<AuthResponse> => {
+    const { data } = await apiClient.post<AuthResponse>('/auth/google', { credential });
+    return data;
+  },
 };
 
 // ---------------------------------------------------------------------------

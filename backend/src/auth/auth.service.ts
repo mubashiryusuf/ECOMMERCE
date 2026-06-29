@@ -12,7 +12,9 @@ import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { GoogleAuthDto } from './dto/google-auth.dto';
 import * as bcrypt from 'bcryptjs';
+import { OAuth2Client } from 'google-auth-library';
 
 @Injectable()
 export class AuthService {
@@ -114,6 +116,40 @@ export class AuthService {
     });
 
     return { message: 'Password updated successfully. Please log in with your new password.' };
+  }
+
+  async googleAuth(dto: GoogleAuthDto) {
+    const clientId = this.config.get<string>('GOOGLE_CLIENT_ID');
+    if (!clientId) {
+      throw new BadRequestException('Google OAuth is not configured on this server');
+    }
+
+    const client = new OAuth2Client(clientId);
+    let ticket;
+    try {
+      ticket = await client.verifyIdToken({ idToken: dto.credential, audience: clientId });
+    } catch {
+      throw new UnauthorizedException('Invalid Google token');
+    }
+
+    const payload = ticket.getPayload();
+    if (!payload?.email) {
+      throw new UnauthorizedException('Could not retrieve email from Google token');
+    }
+
+    const { email, name, sub: googleId } = payload;
+
+    let user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      const randomHash = await bcrypt.hash(`google_${googleId}_${email}`, 10);
+      user = await this.prisma.user.create({
+        data: { email, name: name ?? email.split('@')[0], passwordHash: randomHash, role: 'CUSTOMER' },
+      });
+    }
+
+    const { passwordHash: _omit, ...safeUser } = user;
+    const token = this.signAccess({ id: user.id, email: user.email, role: user.role });
+    return { token, user: safeUser };
   }
 
   private signAccess(user: { id: string; email: string; role: string }) {

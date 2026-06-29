@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { SnackbarProvider } from 'notistack';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { ThemeProvider } from '@/lib/theme/ThemeProvider';
 import { useAuthStore } from '@/store/authStore';
 
@@ -26,14 +27,16 @@ export function Providers({ children }: ProvidersProps) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <ThemeProvider>
-      <SnackbarProvider
-        maxSnack={3}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        autoHideDuration={4000}
-      >
-        {children}
-      </SnackbarProvider>
-    </ThemeProvider>
+    <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? ''}>
+      <ThemeProvider>
+        <SnackbarProvider
+          maxSnack={3}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+          autoHideDuration={4000}
+        >
+          {children}
+        </SnackbarProvider>
+      </ThemeProvider>
+    </GoogleOAuthProvider>
   );
 }

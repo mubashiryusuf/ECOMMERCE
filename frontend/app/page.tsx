@@ -4,6 +4,10 @@ import { ProductGrid } from '@/components/catalog/ProductGrid';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { HeroSection } from '@/components/layout/HeroSection';
+import { TopCategories } from '@/components/home/TopCategories';
+import { ShopByBrands } from '@/components/home/ShopByBrands';
+import { Bestsellers } from '@/components/home/Bestsellers';
+import { SuperSaleBanner } from '@/components/home/SuperSaleBanner';
 import { PageLoader } from '@/components/ui/PageLoader';
 
 interface CatalogPageProps {
@@ -26,64 +30,61 @@ export default function CatalogPage({ searchParams }: CatalogPageProps) {
     searchParams.sort
   );
 
+  const isHome = !hasFilters && !searchParams.page;
+
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#f4f4f5' }}>
       <Navbar />
 
-      {/* Hero — only on unfiltered home */}
-      {!hasFilters && !searchParams.page && <HeroSection />}
+      {/* Home-only promotional sections */}
+      {isHome && (
+        <>
+          <HeroSection />
+          <TopCategories />
+          <ShopByBrands />
+          <Bestsellers />
+        </>
+      )}
 
-      {/* Catalog section */}
-      <Box
-        sx={{
-          maxWidth: 1320,
-          mx: 'auto',
-          px: { xs: 2, md: 4 },
-          py: { xs: 3, md: 5 },
-        }}
-      >
-        {/* Section heading */}
-        {!hasFilters && (
-          <Box sx={{ textAlign: 'center', mb: 5 }}>
-            <Box
-              component="h2"
-              sx={{
-                fontFamily: '"Saira Condensed", sans-serif',
-                fontWeight: 800,
-                fontStyle: 'italic',
-                textTransform: 'uppercase',
-                fontSize: '34px',
-                m: 0,
-                letterSpacing: '0.02em',
-                color: '#18181b',
-              }}
-            >
-              Top Trending
+      {/* Product catalog — always visible */}
+      <Box sx={{ bgcolor: '#fff', py: { xs: 5, md: 7 } }}>
+        <Box sx={{ maxWidth: 1320, mx: 'auto', px: { xs: 2, md: 4 } }}>
+          {isHome && (
+            <Box sx={{ textAlign: 'center', mb: 5 }}>
+              <Box
+                component="h2"
+                sx={{
+                  fontFamily: '"Saira Condensed", sans-serif',
+                  fontWeight: 800,
+                  fontStyle: 'italic',
+                  textTransform: 'uppercase',
+                  fontSize: { xs: '28px', md: '36px' },
+                  m: 0,
+                  color: '#18181b',
+                  letterSpacing: '0.02em',
+                }}
+              >
+                Top Trending
+              </Box>
+              <Box sx={{ width: 48, height: 4, background: '#f2622a', borderRadius: 1, mx: 'auto', mt: '10px' }} />
             </Box>
-            <Box
-              sx={{
-                width: 54,
-                height: 4,
-                background: '#f2622a',
-                borderRadius: 1,
-                mx: 'auto',
-                mt: '10px',
-              }}
-            />
-          </Box>
-        )}
+          )}
 
-        <Suspense fallback={<PageLoader />}>
-          <ProductGrid
-            initialSearch={searchParams.search}
-            initialCategory={searchParams.category}
-            initialMinPrice={searchParams.minPrice ? Number(searchParams.minPrice) : undefined}
-            initialMaxPrice={searchParams.maxPrice ? Number(searchParams.maxPrice) : undefined}
-            initialSort={searchParams.sort as 'price_asc' | 'price_desc' | 'newest' | undefined}
-            initialPage={searchParams.page ? Number(searchParams.page) : 1}
-          />
-        </Suspense>
+          <Suspense fallback={<PageLoader />}>
+            <ProductGrid
+              initialSearch={searchParams.search}
+              initialCategory={searchParams.category}
+              initialMinPrice={searchParams.minPrice ? Number(searchParams.minPrice) : undefined}
+              initialMaxPrice={searchParams.maxPrice ? Number(searchParams.maxPrice) : undefined}
+              initialSort={searchParams.sort as 'price_asc' | 'price_desc' | 'newest' | undefined}
+              initialPage={searchParams.page ? Number(searchParams.page) : 1}
+            />
+          </Suspense>
+        </Box>
       </Box>
+
+      {/* Super Sale banner — home only */}
+      {isHome && <SuperSaleBanner />}
 
       <Footer />
     </Box>

@@ -11,6 +11,7 @@ import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { GoogleAuthDto } from './dto/google-auth.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 
@@ -140,5 +141,25 @@ export class AuthController {
   @Post('reset-password')
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto);
+  }
+
+  @ApiOperation({ summary: 'Authenticate with a Google ID token' })
+  @ApiBody({ type: GoogleAuthDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Authenticated — returns JWT token and user profile (creates account on first sign-in)',
+    schema: {
+      example: {
+        token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        user: { id: 'clxyz123', email: 'user@gmail.com', name: 'John Doe', role: 'CUSTOMER', createdAt: '2026-06-29T10:00:00.000Z' },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Invalid Google token' })
+  @ApiResponse({ status: 400, description: 'Google OAuth not configured on server' })
+  @HttpCode(200)
+  @Post('google')
+  googleAuth(@Body() dto: GoogleAuthDto) {
+    return this.authService.googleAuth(dto);
   }
 }
