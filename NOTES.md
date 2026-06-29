@@ -174,6 +174,7 @@ The "Personalized for you" badge appears inline next to the orange accent bar â€
 
 ## Assumptions & Trade-offs
 
+- **MongoDB backend correction:** Nest watch mode surfaced a stale Prisma/Postgres service (`backend/src/prisma/prisma.service.ts`) that imported `@prisma/client`, `@prisma/adapter-pg`, and `pg`, even though the active backend is implemented with Mongoose/MongoDB. The service was changed to a no-op compatibility provider so TypeScript no longer requires Postgres dependencies or tries to open a Postgres connection.
 - **Category as string:** Stored as a plain string on Product (not a separate table). Simple, sufficient for filtering. Would promote to its own table with more time.
 - **Forgot-password mock:** No SMTP server wired up. Token returned in body in dev/test. Clearly mocked and documented.
 - **Stock validation:** Enforced at cart-add time and again at checkout (transactional). Stock cannot go negative.

@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Box, Typography, Alert } from '@mui/material';
 import { adminApi } from '@/lib/api';
 import { StatsCard } from '@/components/admin/StatsCard';
-import { SalesChart } from '@/components/admin/SalesChart';
 import { PageLoader } from '@/components/ui/PageLoader';
 import { formatPrice } from '@/utils/formatters';
 import type { DashboardStats } from '@/types';
@@ -14,6 +14,11 @@ import {
   LocalShipping,
   Inventory,
 } from '@mui/icons-material';
+
+const SalesChart = dynamic(
+  () => import('@/components/admin/SalesChart').then((m) => ({ default: m.SalesChart })),
+  { ssr: false }
+);
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -42,7 +47,7 @@ export default function AdminDashboardPage() {
   ];
 
   return (
-    <Box sx={{ p: { xs: 2, md: '28px 30px' }, minHeight: '100vh' }}>
+    <Box sx={{ p: { xs: 2, md: '28px 30px' } }}>
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
@@ -133,9 +138,11 @@ export default function AdminDashboardPage() {
             Top Products
           </Typography>
           {stats.topProducts.length === 0 ? (
-            <Typography sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '14px', color: '#a1a1aa', textAlign: 'center', py: 4 }}>
-              No sales data yet
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 140 }}>
+              <Typography sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '13px', color: '#a1a1aa' }}>
+                No sales data yet
+              </Typography>
+            </Box>
           ) : (
             stats.topProducts.map((product, index) => (
               <Box

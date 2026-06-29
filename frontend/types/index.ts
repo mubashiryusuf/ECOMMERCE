@@ -43,6 +43,8 @@ export interface Product {
   /** Price in minor currency units (cents). Never a float. */
   priceCents: number;
   imageUrl: string;
+  /** All product images; imageUrl is always images[0]. Falls back to [imageUrl] when absent. */
+  images?: string[];
   category: string;
   /** Must be >= 0. Zero means out of stock. */
   stockQuantity: number;
@@ -182,6 +184,7 @@ export interface CreateProductPayload {
   /** Must be submitted as cents (integer) */
   priceCents: number;
   imageUrl: string;
+  images?: string[];
   category: string;
   stockQuantity: number;
 }
@@ -201,3 +204,22 @@ export interface CatalogFilters {
   page?: number;
   limit?: number;
 }
+
+// ---------------------------------------------------------------------------
+// Category
+// ---------------------------------------------------------------------------
+
+export interface Category {
+  id: string;
+  name: string;
+  imageUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCategoryPayload {
+  name: string;
+  imageUrl?: string;
+}
+
+export type UpdateCategoryPayload = Partial<CreateCategoryPayload>;

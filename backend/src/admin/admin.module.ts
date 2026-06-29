@@ -6,6 +6,7 @@ import { AdminOrdersController } from './orders/admin-orders.controller';
 import { AdminOrdersService } from './orders/admin-orders.service';
 import { AdminDashboardController } from './dashboard/admin-dashboard.controller';
 import { AdminDashboardService } from './dashboard/admin-dashboard.service';
+import { AdminUploadController } from './upload/admin-upload.controller';
 import { Product, ProductSchema } from '../mongoose/schemas/product.schema';
 import { Order, OrderSchema } from '../mongoose/schemas/order.schema';
 import { User, UserSchema } from '../users/user.schema';
@@ -18,7 +19,7 @@ import { User, UserSchema } from '../users/user.schema';
       { name: User.name, schema: UserSchema },
     ]),
   ],
-  controllers: [AdminProductsController, AdminOrdersController, AdminDashboardController],
+  controllers: [AdminProductsController, AdminOrdersController, AdminDashboardController, AdminUploadController],
   providers: [AdminProductsService, AdminOrdersService, AdminDashboardService],
 })
 export class AdminModule {}

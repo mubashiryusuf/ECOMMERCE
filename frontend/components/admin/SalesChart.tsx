@@ -32,8 +32,39 @@ export function SalesChart({ orderCountByStatus }: SalesChartProps) {
     color: STATUS_COLORS[status] ?? '#a1a1aa',
   }));
 
+  const hasData = chartData.some((d) => d.count > 0);
+
+  if (!hasData) {
+    return (
+      <div style={{ height: 180, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {chartData.map((d) => (
+            <div
+              key={d.status}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 6,
+                background: `${d.color}22`,
+                border: `1.5px solid ${d.color}44`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <div style={{ width: 10, height: 10, borderRadius: 2, background: d.color, opacity: 0.5 }} />
+            </div>
+          ))}
+        </div>
+        <p style={{ fontFamily: 'Manrope, sans-serif', fontSize: 13, color: '#a1a1aa', margin: 0 }}>
+          No orders yet — chart will appear here
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <ResponsiveContainer width="100%" height={260}>
+    <ResponsiveContainer width="100%" height={220}>
       <BarChart
         data={chartData}
         margin={{ top: 4, right: 8, left: -8, bottom: 4 }}

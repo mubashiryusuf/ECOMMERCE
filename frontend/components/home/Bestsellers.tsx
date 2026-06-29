@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import NextLink from 'next/link';
 import { Box, CircularProgress } from '@mui/material';
 import { productsApi } from '@/lib/api';
+import { resolveImageUrl } from '@/lib/images';
 import type { Product } from '@/types';
 
 export function Bestsellers() {
@@ -113,7 +114,7 @@ export function Bestsellers() {
                     )}
                     <Box
                       component="img"
-                      src={p.imageUrl}
+                      src={resolveImageUrl(p.imageUrl)}
                       alt={p.name}
                       sx={{
                         width: '100%',
@@ -121,6 +122,9 @@ export function Bestsellers() {
                         objectFit: 'cover',
                         transition: 'transform 0.3s',
                         '&:hover': { transform: 'scale(1.05)' },
+                      }}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://placehold.co/400x400?text=No+Image';
                       }}
                     />
                   </Box>

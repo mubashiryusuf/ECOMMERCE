@@ -20,6 +20,9 @@ frontend/.turbo/
 # ─── NestJS (backend) ────────────────────────────────────────────────────────
 backend/dist/
 backend/build/
+# Uploaded product images — keep the folder (tracked via .gitkeep) but not the files
+backend/uploads/products/*
+!backend/uploads/products/.gitkeep
 
 # ─── Prisma ──────────────────────────────────────────────────────────────────
 # keep prisma/migrations/ committed — they are the migration history

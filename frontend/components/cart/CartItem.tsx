@@ -5,6 +5,8 @@ import { Box, Typography, CircularProgress } from '@mui/material';
 import { useCart } from '@/lib/hooks/useCart';
 import { useSnackbar } from 'notistack';
 import { formatPrice } from '@/utils/formatters';
+import { getErrorMessage } from '@/lib/errors';
+import { resolveImageUrl } from '@/lib/images';
 import type { CartItem as CartItemType } from '@/types';
 
 interface CartItemRowProps {
@@ -26,10 +28,7 @@ export function CartItemRow({ item }: CartItemRowProps) {
     try {
       await updateQuantity(item.id, newQuantity);
     } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Could not update quantity';
-      enqueueSnackbar(message, { variant: 'error' });
+      enqueueSnackbar(getErrorMessage(err, 'Could not update quantity'), { variant: 'error' });
     } finally {
       setIsUpdating(false);
     }
@@ -73,7 +72,7 @@ export function CartItemRow({ item }: CartItemRowProps) {
       >
         <Box
           component="img"
-          src={item.product.imageUrl || 'https://placehold.co/104x104?text=No+Image'}
+          src={resolveImageUrl(item.product.imageUrl, 'https://placehold.co/104x104?text=No+Image')}
           alt={item.product.name}
           sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
           onError={(e) => {

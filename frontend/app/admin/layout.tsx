@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Box, CircularProgress } from '@mui/material';
 import { useAuthStore } from '@/store/authStore';
@@ -11,61 +11,47 @@ interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
-const SIDEBAR_WIDTH = 230;
+const Spinner = () => (
+  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+    <CircularProgress color="primary" size={48} thickness={4} />
+  </Box>
+);
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const router = useRouter();
   const { user, isLoading, loadUser } = useAuthStore();
-  const hasToken = getToken();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     loadUser();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (isLoading) return;
+    if (!mounted || isLoading) return;
     if (!user) {
-      // If no token exists at all, redirect home immediately.
-      // If a token exists, loadUser() is still in flight — wait for it.
       if (!getToken()) router.replace('/');
       return;
     }
-    if (user.role !== 'ADMIN') {
-      router.replace('/');
-    }
-  }, [user, isLoading, router]);
+    if (user.role !== 'ADMIN') router.replace('/');
+  }, [user, isLoading, mounted, router]);
 
-  // Show spinner while token exists but user is not yet resolved (loadUser in flight)
-  if (isLoading || (!user && hasToken)) {
-    return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '100vh',
-        }}
-      >
-        <CircularProgress color="primary" size={48} thickness={4} />
-      </Box>
-    );
-  }
+  // Before mount: server and client both render the same spinner (prevents hydration mismatch)
+  if (!mounted || isLoading) return <Spinner />;
 
-  // No token and no user — redirect effect is in progress; render nothing briefly
-  if (!user || user.role !== 'ADMIN') {
-    return null;
-  }
+  // Auth resolved — not an admin, redirect in flight
+  if (!user || user.role !== 'ADMIN') return null;
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#f7f7f8' }}>
+    <Box sx={{ display: 'flex', height: '100vh', bgcolor: '#f7f7f8', overflow: 'hidden' }}>
       <AdminSidebar />
       <Box
         component="main"
         sx={{
           flexGrow: 1,
-          ml: `${SIDEBAR_WIDTH}px`,
-          minHeight: '100vh',
-          overflow: 'auto',
+          height: '100vh',
+          overflowY: 'auto',
+          minWidth: 0,
         }}
       >
         {children}

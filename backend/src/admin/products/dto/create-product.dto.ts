@@ -1,7 +1,8 @@
 import {
   IsString,
   IsInt,
-  IsUrl,
+  IsOptional,
+  IsArray,
   Min,
   MinLength,
   MaxLength,
@@ -26,8 +27,14 @@ export class CreateProductDto {
   @Min(1)
   priceCents: number;
 
-  @IsUrl()
-  imageUrl: string;
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  images?: string[];
 
   @IsString()
   @IsNotEmpty()

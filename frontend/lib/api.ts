@@ -10,8 +10,10 @@ import { getToken, clearToken } from './auth';
 import type {
   AuthResponse,
   Cart,
+  Category,
   CatalogFilters,
   CheckoutPayload,
+  CreateCategoryPayload,
   CreateProductPayload,
   DashboardStats,
   LoginPayload,
@@ -19,6 +21,7 @@ import type {
   PaginatedResponse,
   Product,
   SignupPayload,
+  UpdateCategoryPayload,
   UpdateOrderStatusPayload,
   UpdateProductPayload,
 } from '@/types';
@@ -202,6 +205,17 @@ export const suggestionsApi = {
 };
 
 // ---------------------------------------------------------------------------
+// Categories API (public read)
+// ---------------------------------------------------------------------------
+
+export const categoriesApi = {
+  list: async (): Promise<Category[]> => {
+    const { data } = await apiClient.get<Category[]>('/categories');
+    return data;
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Admin API (auth + ADMIN role required)
 // ---------------------------------------------------------------------------
 
@@ -241,5 +255,45 @@ export const adminApi = {
   getDashboardStats: async (): Promise<DashboardStats> => {
     const { data } = await apiClient.get<DashboardStats>('/admin/dashboard/stats');
     return data;
+  },
+
+  // Image upload — products
+  uploadImage: async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const { data } = await apiClient.post<{ url: string }>('/admin/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data.url;
+  },
+
+  // Image upload — categories
+  uploadCategoryImage: async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const { data } = await apiClient.post<{ url: string }>('/admin/upload/category', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data.url;
+  },
+
+  // Categories
+  listCategories: async (): Promise<Category[]> => {
+    const { data } = await apiClient.get<Category[]>('/admin/categories');
+    return data;
+  },
+
+  createCategory: async (payload: CreateCategoryPayload): Promise<Category> => {
+    const { data } = await apiClient.post<Category>('/admin/categories', payload);
+    return data;
+  },
+
+  updateCategory: async (id: string, payload: UpdateCategoryPayload): Promise<Category> => {
+    const { data } = await apiClient.patch<Category>(`/admin/categories/${id}`, payload);
+    return data;
+  },
+
+  deleteCategory: async (id: string): Promise<void> => {
+    await apiClient.delete(`/admin/categories/${id}`);
   },
 };

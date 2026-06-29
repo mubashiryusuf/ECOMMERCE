@@ -4,7 +4,6 @@ import NextLink from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Box,
-  Drawer,
   List,
   ListItemButton,
   ListItemIcon,
@@ -17,15 +16,15 @@ import {
   Inventory,
   ShoppingBag,
   Logout,
+  Category as CategoryIcon,
 } from '@mui/icons-material';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
 
-const SIDEBAR_WIDTH = 230;
-
 const NAV_ITEMS = [
   { label: 'Dashboard', href: '/admin', icon: <Dashboard /> },
   { label: 'Products', href: '/admin/products', icon: <Inventory /> },
+  { label: 'Categories', href: '/admin/categories', icon: <CategoryIcon /> },
   { label: 'Orders', href: '/admin/orders', icon: <ShoppingBag /> },
 ];
 
@@ -40,18 +39,20 @@ export function AdminSidebar() {
   };
 
   return (
-    <Drawer
-      variant="permanent"
+    <Box
+      component="nav"
       sx={{
-        width: SIDEBAR_WIDTH,
+        width: 230,
         flexShrink: 0,
-        '& .MuiDrawer-paper': {
-          width: SIDEBAR_WIDTH,
-          boxSizing: 'border-box',
-          background: '#0c0c0e',
-          color: '#fff',
-          borderRight: '1px solid rgba(255,255,255,0.06)',
-        },
+        background: '#0c0c0e',
+        color: '#fff',
+        borderRight: '1px solid rgba(255,255,255,0.06)',
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
+        position: 'sticky',
+        top: 0,
+        overflowY: 'auto',
       }}
     >
       {/* Logo */}
@@ -171,6 +172,6 @@ export function AdminSidebar() {
           />
         </ListItemButton>
       </Box>
-    </Drawer>
+    </Box>
   );
 }

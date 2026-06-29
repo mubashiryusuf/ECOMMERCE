@@ -7,6 +7,8 @@ import { useCart } from '@/lib/hooks/useCart';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useSnackbar } from 'notistack';
 import { formatPrice } from '@/utils/formatters';
+import { getErrorMessage } from '@/lib/errors';
+import { resolveImageUrl } from '@/lib/images';
 import type { Product } from '@/types';
 
 interface ProductCardProps {
@@ -33,10 +35,7 @@ export function ProductCard({ product }: ProductCardProps) {
       await addItem(product.id, 1);
       enqueueSnackbar(`${product.name} added to cart`, { variant: 'success' });
     } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Could not add to cart';
-      enqueueSnackbar(message, { variant: 'error' });
+      enqueueSnackbar(getErrorMessage(err, 'Could not add to cart'), { variant: 'error' });
     } finally {
       setIsAdding(false);
     }
@@ -75,7 +74,7 @@ export function ProductCard({ product }: ProductCardProps) {
       >
         <Box
           component="img"
-          src={product.imageUrl || 'https://placehold.co/400x400?text=No+Image'}
+          src={resolveImageUrl(product.imageUrl)}
           alt={product.name}
           sx={{
             width: '100%',

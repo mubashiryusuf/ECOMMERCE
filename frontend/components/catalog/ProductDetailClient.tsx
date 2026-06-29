@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import NextLink from 'next/link';
-import { Box, Typography, Alert, Grid, CircularProgress } from '@mui/material';
+import { Box, Typography, Alert, Grid, CircularProgress, Divider } from '@mui/material';
 import { productsApi, suggestionsApi } from '@/lib/api';
 import { useCart } from '@/lib/hooks/useCart';
 import { useAuth } from '@/lib/hooks/useAuth';
@@ -10,6 +10,8 @@ import { useSnackbar } from 'notistack';
 import { PageLoader } from '@/components/ui/PageLoader';
 import { ProductCard } from './ProductCard';
 import { formatPrice } from '@/utils/formatters';
+import { getErrorMessage } from '@/lib/errors';
+import { resolveImageUrl } from '@/lib/images';
 import type { Product } from '@/types';
 import { useRouter } from 'next/navigation';
 import { useUiStore } from '@/store/uiStore';
@@ -26,6 +28,7 @@ export function ProductDetailClient({ productId }: ProductDetailClientProps) {
   const [suggestions, setSuggestions] = useState<Product[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
+  const [activeImgIdx, setActiveImgIdx] = useState(0);
 
   const { addItem } = useCart();
   const { isAuthenticated } = useAuth();
@@ -35,6 +38,7 @@ export function ProductDetailClient({ productId }: ProductDetailClientProps) {
 
   useEffect(() => {
     setIsLoading(true);
+    setActiveImgIdx(0);
     const personalizedFetch = isAuthenticated
       ? suggestionsApi.getPersonalized()
       : Promise.resolve([] as Product[]);
@@ -67,10 +71,7 @@ export function ProductDetailClient({ productId }: ProductDetailClientProps) {
       await addItem(product.id, quantity);
       enqueueSnackbar(`${product.name} added to cart`, { variant: 'success' });
     } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Could not add to cart';
-      enqueueSnackbar(message, { variant: 'error' });
+      enqueueSnackbar(getErrorMessage(err, 'Could not add to cart'), { variant: 'error' });
     } finally {
       setIsAdding(false);
     }
@@ -82,6 +83,15 @@ export function ProductDetailClient({ productId }: ProductDetailClientProps) {
 
   const isOutOfStock = product.stockQuantity === 0;
   const maxQty = Math.min(product.stockQuantity, 10);
+
+  // Build image gallery: prefer images[] array, fall back to single imageUrl
+  const allImages: string[] = ((product as any).images?.length
+    ? (product as any).images
+    : product.imageUrl
+    ? [product.imageUrl]
+    : []) as string[];
+
+  const activeImage = allImages[activeImgIdx] ?? allImages[0] ?? '';
 
   return (
     <Box sx={{ maxWidth: 1320, mx: 'auto', px: { xs: 2, md: 4 }, py: { xs: 3, md: 4 } }}>
@@ -109,8 +119,11 @@ export function ProductDetailClient({ productId }: ProductDetailClientProps) {
       </Box>
 
       <Grid container spacing={5}>
-        {/* Image */}
+        {/* ---------------------------------------------------------------- */}
+        {/* Left — image gallery                                             */}
+        {/* ---------------------------------------------------------------- */}
         <Grid item xs={12} md={6}>
+          {/* Main image */}
           <Box
             sx={{
               position: 'relative',
@@ -123,9 +136,9 @@ export function ProductDetailClient({ productId }: ProductDetailClientProps) {
           >
             <Box
               component="img"
-              src={product.imageUrl || 'https://placehold.co/600x600?text=No+Image'}
+              src={resolveImageUrl(activeImage, 'https://placehold.co/600x600?text=No+Image')}
               alt={product.name}
-              sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              sx={{ width: '100%', height: '100%', objectFit: 'contain', p: '12px' }}
               onError={(e) => {
                 (e.target as HTMLImageElement).src = 'https://placehold.co/600x600?text=No+Image';
               }}
@@ -151,9 +164,51 @@ export function ProductDetailClient({ productId }: ProductDetailClientProps) {
               </Box>
             )}
           </Box>
+
+          {/* Thumbnails — only shown when there are multiple images */}
+          {allImages.length > 1 && (
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: `repeat(${Math.min(allImages.length, 5)}, 1fr)`,
+                gap: '8px',
+                mt: '10px',
+              }}
+            >
+              {allImages.map((img, i) => (
+                <Box
+                  key={i}
+                  onClick={() => setActiveImgIdx(i)}
+                  sx={{
+                    aspectRatio: '1',
+                    borderRadius: '10px',
+                    overflow: 'hidden',
+                    border: i === activeImgIdx ? '2px solid #f2622a' : '1.5px solid #ededf0',
+                    background: '#f4f4f5',
+                    cursor: 'pointer',
+                    transition: 'border-color 0.15s, transform 0.15s',
+                    '&:hover': {
+                      borderColor: i === activeImgIdx ? '#f2622a' : '#a1a1aa',
+                      transform: 'scale(1.03)',
+                    },
+                  }}
+                >
+                  <Box
+                    component="img"
+                    src={resolveImageUrl(img, '')}
+                    alt={`${product.name} view ${i + 1}`}
+                    sx={{ width: '100%', height: '100%', objectFit: 'contain', p: '4px' }}
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
+                </Box>
+              ))}
+            </Box>
+          )}
         </Grid>
 
-        {/* Info */}
+        {/* ---------------------------------------------------------------- */}
+        {/* Right — product info                                             */}
+        {/* ---------------------------------------------------------------- */}
         <Grid item xs={12} md={6}>
           <Box
             sx={{
@@ -187,28 +242,11 @@ export function ProductDetailClient({ productId }: ProductDetailClientProps) {
 
           <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 2, mb: 3 }}>
             <Typography
-              sx={{
-                fontFamily: '"Saira", sans-serif',
-                fontWeight: 700,
-                fontSize: '32px',
-                color: '#18181b',
-              }}
+              sx={{ fontFamily: '"Saira", sans-serif', fontWeight: 700, fontSize: '32px', color: '#18181b' }}
             >
               {formatPrice(product.priceCents)}
             </Typography>
           </Box>
-
-          <Typography
-            sx={{
-              fontFamily: '"Manrope", sans-serif',
-              fontSize: '14.5px',
-              lineHeight: 1.65,
-              color: '#52525b',
-              mb: 3,
-            }}
-          >
-            {product.description}
-          </Typography>
 
           {/* Stock status */}
           <Box
@@ -229,6 +267,7 @@ export function ProductDetailClient({ productId }: ProductDetailClientProps) {
                 height: 8,
                 borderRadius: '50%',
                 background: isOutOfStock ? '#e63946' : product.stockQuantity <= 5 ? '#f59e0b' : '#16a34a',
+                flexShrink: 0,
               }}
             />
             {isOutOfStock
@@ -269,28 +308,15 @@ export function ProductDetailClient({ productId }: ProductDetailClientProps) {
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                     disabled={quantity <= 1}
                     sx={{
-                      width: 46,
-                      height: 52,
-                      border: 'none',
-                      background: '#fff',
-                      fontSize: '22px',
-                      cursor: 'pointer',
-                      color: '#18181b',
+                      width: 46, height: 52, border: 'none', background: '#fff',
+                      fontSize: '22px', cursor: 'pointer', color: '#18181b',
                       '&:hover': { background: '#f4f4f5' },
                       '&:disabled': { color: '#a1a1aa', cursor: 'not-allowed' },
                     }}
                   >
                     −
                   </Box>
-                  <Box
-                    sx={{
-                      width: 44,
-                      textAlign: 'center',
-                      fontFamily: '"Saira", sans-serif',
-                      fontWeight: 700,
-                      fontSize: '17px',
-                    }}
-                  >
+                  <Box sx={{ width: 44, textAlign: 'center', fontFamily: '"Saira", sans-serif', fontWeight: 700, fontSize: '17px' }}>
                     {quantity}
                   </Box>
                   <Box
@@ -298,13 +324,8 @@ export function ProductDetailClient({ productId }: ProductDetailClientProps) {
                     onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
                     disabled={quantity >= maxQty}
                     sx={{
-                      width: 46,
-                      height: 52,
-                      border: 'none',
-                      background: '#fff',
-                      fontSize: '22px',
-                      cursor: 'pointer',
-                      color: '#18181b',
+                      width: 46, height: 52, border: 'none', background: '#fff',
+                      fontSize: '22px', cursor: 'pointer', color: '#18181b',
                       '&:hover': { background: '#f4f4f5' },
                       '&:disabled': { color: '#a1a1aa', cursor: 'not-allowed' },
                     }}
@@ -360,7 +381,51 @@ export function ProductDetailClient({ productId }: ProductDetailClientProps) {
         </Grid>
       </Grid>
 
-      {/* You May Also Like — personalized for auth'd users, contextual for guests */}
+      {/* ------------------------------------------------------------------ */}
+      {/* Description section                                                  */}
+      {/* ------------------------------------------------------------------ */}
+      <Box
+        sx={{
+          mt: 5,
+          background: '#fff',
+          borderRadius: '16px',
+          border: '1px solid #ededf0',
+          overflow: 'hidden',
+        }}
+      >
+        <Box sx={{ px: { xs: 3, md: 4 }, py: '18px', borderBottom: '1px solid #ededf0' }}>
+          <Typography
+            sx={{
+              fontFamily: '"Saira Condensed", sans-serif',
+              fontWeight: 800,
+              fontStyle: 'italic',
+              textTransform: 'uppercase',
+              fontSize: '20px',
+              color: '#18181b',
+              letterSpacing: '0.02em',
+            }}
+          >
+            Description
+          </Typography>
+        </Box>
+        <Box sx={{ px: { xs: 3, md: 4 }, py: '24px' }}>
+          <Typography
+            sx={{
+              fontFamily: '"Manrope", sans-serif',
+              fontSize: '15px',
+              lineHeight: 1.75,
+              color: '#52525b',
+              whiteSpace: 'pre-line',
+            }}
+          >
+            {product.description}
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* You May Also Like                                                    */}
+      {/* ------------------------------------------------------------------ */}
       {(() => {
         const personalizedFiltered = suggestions.filter((p) => p.id !== productId);
         const isPersonalized = isAuthenticated && personalizedFiltered.length > 0;

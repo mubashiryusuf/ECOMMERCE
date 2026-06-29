@@ -12,6 +12,8 @@ import { adminApi } from '@/lib/api';
 import { productsApi } from '@/lib/api';
 import { PageLoader } from '@/components/ui/PageLoader';
 import { formatPrice } from '@/utils/formatters';
+import { getErrorMessage } from '@/lib/errors';
+import { resolveImageUrl } from '@/lib/images';
 import type { Product } from '@/types';
 
 export default function AdminProductsPage() {
@@ -26,7 +28,7 @@ export default function AdminProductsPage() {
       .list({ limit: 100 })
       .then((res) => setProducts(res.items))
       .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : 'Failed to load products');
+        setError(getErrorMessage(err, 'Failed to load products'));
       })
       .finally(() => setIsLoading(false));
   };
@@ -42,10 +44,7 @@ export default function AdminProductsPage() {
       await adminApi.deleteProduct(productId);
       setProducts((prev) => prev.filter((p) => p.id !== productId));
     } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Failed to delete product';
-      setDeleteError(message);
+      setDeleteError(getErrorMessage(err, 'Failed to delete product'));
     }
   };
 
@@ -167,14 +166,26 @@ export default function AdminProductsPage() {
               }}
             >
               <Box
-                component="img"
-                src={product.imageUrl}
-                alt={product.name}
-                sx={{ width: 52, height: 52, objectFit: 'cover', borderRadius: '8px', border: '1px solid #ededf0' }}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://placehold.co/52x52?text=No+Image';
+                sx={{
+                  width: 52, height: 52, borderRadius: '8px', border: '1px solid #ededf0',
+                  overflow: 'hidden', bgcolor: '#f4f4f5', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}
-              />
+              >
+                {product.imageUrl ? (
+                  <Box
+                    component="img"
+                    src={resolveImageUrl(product.imageUrl)}
+                    alt={product.name}
+                    sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
+                ) : (
+                  <Typography sx={{ fontFamily: '"Saira", sans-serif', fontWeight: 700, fontSize: '16px', color: '#a1a1aa' }}>
+                    {product.name.charAt(0).toUpperCase()}
+                  </Typography>
+                )}
+              </Box>
 
               <Box>
                 <Typography sx={{ fontFamily: '"Manrope", sans-serif', fontWeight: 600, fontSize: '13.5px', color: '#18181b', lineHeight: 1.3 }}>
@@ -185,23 +196,24 @@ export default function AdminProductsPage() {
                 </Typography>
               </Box>
 
-              <Box
-                sx={{
-                  display: 'inline-flex',
-                  alignSelf: 'center',
-                  px: '10px',
-                  py: '3px',
-                  background: 'rgba(242,98,42,0.08)',
-                  borderRadius: '6px',
-                  fontFamily: '"Saira", sans-serif',
-                  fontWeight: 700,
-                  fontSize: '11px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.04em',
-                  color: '#f2622a',
-                }}
-              >
-                {product.category}
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Box
+                  sx={{
+                    display: 'inline-flex',
+                    px: '10px',
+                    py: '3px',
+                    background: 'rgba(242,98,42,0.08)',
+                    borderRadius: '6px',
+                    fontFamily: '"Saira", sans-serif',
+                    fontWeight: 700,
+                    fontSize: '11px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                    color: '#f2622a',
+                  }}
+                >
+                  {product.category}
+                </Box>
               </Box>
 
               <Typography sx={{ fontFamily: '"Saira", sans-serif', fontWeight: 700, fontSize: '14px', color: '#18181b' }}>
@@ -224,23 +236,24 @@ export default function AdminProductsPage() {
                 {product.stockQuantity}
               </Typography>
 
-              <Box
-                sx={{
-                  display: 'inline-flex',
-                  alignSelf: 'center',
-                  px: '10px',
-                  py: '3px',
-                  background: product.stockQuantity === 0 ? 'rgba(230,57,70,0.1)' : 'rgba(22,163,74,0.1)',
-                  borderRadius: '6px',
-                  fontFamily: '"Saira", sans-serif',
-                  fontWeight: 700,
-                  fontSize: '11px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.04em',
-                  color: product.stockQuantity === 0 ? '#e63946' : '#16a34a',
-                }}
-              >
-                {product.stockQuantity === 0 ? 'Out' : 'Active'}
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Box
+                  sx={{
+                    display: 'inline-flex',
+                    px: '10px',
+                    py: '3px',
+                    background: product.stockQuantity === 0 ? 'rgba(230,57,70,0.1)' : 'rgba(22,163,74,0.1)',
+                    borderRadius: '6px',
+                    fontFamily: '"Saira", sans-serif',
+                    fontWeight: 700,
+                    fontSize: '11px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                    color: product.stockQuantity === 0 ? '#e63946' : '#16a34a',
+                  }}
+                >
+                  {product.stockQuantity === 0 ? 'Out' : 'Active'}
+                </Box>
               </Box>
 
               <Box sx={{ display: 'flex', gap: '6px' }}>
