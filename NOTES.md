@@ -81,6 +81,37 @@ curl -X GET http://localhost:3001/api/admin/dashboard/stats \
 
 ---
 
+## Bug Fix — Admin Login (2026-06-29)
+
+**Root cause (two issues):**
+
+1. **Middleware redirect target**: `frontend/middleware.ts` was redirecting unauthenticated `/admin` attempts to `/` (the homepage) rather than `/login?redirect=/admin`. This left the user on the storefront with no indication they needed to log in. The `matcher` config also had `'/admin/:path*'` which, despite Next.js treating `:path*` as zero-or-more, was acting inconsistently — added explicit `'/admin'` entry to cover the bare dashboard path.
+
+2. **AuthDrawer timing**: `SignInForm.onSubmit` called `onAuthSuccess` inside a `setTimeout(..., 350)` to wait for the drawer close animation. This was fragile — if React batched re-renders or the callback reference changed (Navbar re-render on `drawerOpen` state change), the admin redirect could miss. After `await login()`, the Zustand store is synchronously updated, so `onAuthSuccess` can be called immediately after `onSuccess()` (the close). Removed all `setTimeout` wrappers across email login, signup, and Google OAuth paths.
+
+**Fixes applied:**
+- `frontend/middleware.ts`: unauthenticated `/admin` → `/login?redirect=/admin`; added `/admin` to matcher
+- `frontend/components/layout/AuthDrawer.tsx`: removed 350ms setTimeout; `onAuthSuccess` called synchronously
+
+**Verification:**
+```bash
+# No token → redirects to /login?redirect=%2Fadmin
+curl -I http://localhost:3000/admin
+# HTTP/1.1 307 → location: /login?redirect=%2Fadmin
+
+# Customer token → redirects to /
+curl -I -H "Cookie: token=<customer-jwt>" http://localhost:3000/admin
+# HTTP/1.1 307 → location: /
+
+# Admin token → 200 OK
+curl -I -H "Cookie: token=<admin-jwt>" http://localhost:3000/admin
+# HTTP/1.1 200 OK
+```
+
+**Agent mistakes caught:** Previous implementation used a 350ms `setTimeout` for the auth drawer post-login callback — a timing anti-pattern that works most of the time but is not reliable. Also missed that the middleware redirect target for admin was `/` (unhelpful) instead of `/login`.
+
+---
+
 ## Assumptions & Trade-offs
 
 - **Category as string:** Stored as a plain string on Product (not a separate table). Simple, sufficient for filtering. Would promote to its own table with more time.
