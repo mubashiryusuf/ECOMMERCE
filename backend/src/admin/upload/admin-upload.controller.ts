@@ -16,6 +16,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 
 const productUploadDir = join(process.cwd(), 'uploads', 'products');
 const categoryUploadDir = join(process.cwd(), 'uploads', 'categories');
+const brandUploadDir = join(process.cwd(), 'uploads', 'brands');
 
 function makeInterceptor(destDir: string) {
   return FileInterceptor('file', {
@@ -55,5 +56,12 @@ export class AdminUploadController {
   uploadCategoryImage(@UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException('No file provided');
     return { url: `/uploads/categories/${file.filename}` };
+  }
+
+  @Post('brand')
+  @UseInterceptors(makeInterceptor(brandUploadDir))
+  uploadBrandImage(@UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException('No file provided');
+    return { url: `/uploads/brands/${file.filename}` };
   }
 }

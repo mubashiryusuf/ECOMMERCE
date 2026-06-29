@@ -20,10 +20,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useSnackbar } from 'notistack';
 import { Input } from '@/components/ui/Input';
-import { adminApi, categoriesApi, productsApi } from '@/lib/api';
+import { adminApi, categoriesApi, productsApi, brandsApi } from '@/lib/api';
 import { getErrorMessage } from '@/lib/errors';
 import { resolveImageUrl } from '@/lib/images';
-import type { Category, Product } from '@/types';
+import type { Brand, Category, Product } from '@/types';
 
 const productSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -59,6 +59,10 @@ export function ProductForm({ productId }: ProductFormProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [catsLoading, setCatsLoading] = useState(true);
 
+  // Brands
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [selectedBrand, setSelectedBrand] = useState<string>('');
+
   // Multi-image state
   const [images, setImages] = useState<string[]>([]);
   const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
@@ -78,6 +82,10 @@ export function ProductForm({ productId }: ProductFormProps) {
   });
 
   useEffect(() => {
+    brandsApi.list().then(setBrands).catch(() => {});
+  }, []);
+
+  useEffect(() => {
     if (!productId) return;
     productsApi
       .getById(productId)
@@ -89,6 +97,7 @@ export function ProductForm({ productId }: ProductFormProps) {
           category: product.category,
           stockQuantity: product.stockQuantity,
         });
+        setSelectedBrand(product.brand ?? '');
         // Restore images: prefer images[] array, fall back to single imageUrl
         const existing = (product as any).images?.length
           ? (product as any).images
@@ -151,6 +160,7 @@ export function ProductForm({ productId }: ProductFormProps) {
       description: values.description,
       priceCents: Math.round(values.priceDollars * 100),
       category: values.category,
+      brand: selectedBrand || undefined,
       imageUrl: images[0],
       images,
       stockQuantity: values.stockQuantity,
@@ -294,6 +304,39 @@ export function ProductForm({ productId }: ProductFormProps) {
           </FormControl>
         )}
       />
+
+      {/* Brand (optional) */}
+      <FormControl fullWidth size="small">
+        <InputLabel
+          id="brand-label"
+          sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '13px', '&.Mui-focused': { color: '#f2622a' } }}
+        >
+          Brand (optional)
+        </InputLabel>
+        <Select
+          labelId="brand-label"
+          label="Brand (optional)"
+          value={selectedBrand}
+          onChange={(e) => setSelectedBrand(e.target.value)}
+          sx={{
+            borderRadius: '8px',
+            fontFamily: '"Manrope", sans-serif',
+            fontSize: '13px',
+            '& .MuiOutlinedInput-notchedOutline': { borderColor: '#ededf0' },
+            '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#a1a1aa' },
+            '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#f2622a' },
+          }}
+        >
+          <MenuItem value="" sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '13px', color: '#a1a1aa' }}>
+            <em>No brand</em>
+          </MenuItem>
+          {brands.map((b) => (
+            <MenuItem key={b.id} value={b.name} sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '13px' }}>
+              {b.name}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
 
       {/* ------------------------------------------------------------------ */}
       {/* Multi-image upload                                                   */}

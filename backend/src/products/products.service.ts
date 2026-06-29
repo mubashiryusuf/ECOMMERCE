@@ -9,11 +9,12 @@ export class ProductsService {
   constructor(@InjectModel(Product.name) private productModel: Model<ProductDocument>) {}
 
   async findAll(query: QueryProductsDto) {
-    const { search, category, minPrice, maxPrice, sort, page = 1, limit = 20 } = query;
+    const { search, category, brand, minPrice, maxPrice, sort, page = 1, limit = 20 } = query;
 
     const filter: any = {};
     if (search) filter.name = { $regex: search, $options: 'i' };
     if (category) filter.category = category;
+    if (brand) filter.brand = brand;
     if (minPrice !== undefined || maxPrice !== undefined) {
       filter.priceCents = {};
       if (minPrice !== undefined) filter.priceCents.$gte = minPrice;

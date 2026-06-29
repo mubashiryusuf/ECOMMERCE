@@ -12,6 +12,17 @@ import { CheckoutDto } from './dto/checkout.dto';
 export class CheckoutController {
   constructor(private checkoutService: CheckoutService) {}
 
+  /**
+   * Creates a Stripe PaymentIntent so the frontend can collect card details
+   * and confirm the payment before calling POST /checkout.
+   * The amount must be sent as an integer (cents) in the request body.
+   */
+  @ApiOperation({ summary: 'Create a Stripe PaymentIntent' })
+  @Post('payment-intent')
+  createPaymentIntent(@Body('amount') amount: number) {
+    return this.checkoutService.createPaymentIntent(amount);
+  }
+
   @Post()
   checkout(@CurrentUser() user: any, @Body() dto: CheckoutDto) {
     return this.checkoutService.checkout(user.id, dto);

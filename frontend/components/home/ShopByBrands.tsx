@@ -1,14 +1,27 @@
-import NextLink from 'next/link';
-import { Box } from '@mui/material';
+'use client';
 
-const BRANDS = [
-  { name: 'Adidas', href: '/?category=Adidas', img: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600&q=80' },
-  { name: 'Puma', href: '/?category=Puma', img: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=600&q=80' },
-  { name: 'Nike', href: '/?category=Nike', img: 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=600&q=80' },
-  { name: 'Reebok', href: '/?category=Reebok', img: 'https://images.unsplash.com/photo-1538805060514-97d9cc17730c?w=600&q=80' },
-];
+import { useEffect, useState } from 'react';
+import NextLink from 'next/link';
+import { Box, Skeleton } from '@mui/material';
+import { brandsApi } from '@/lib/api';
+import { resolveImageUrl } from '@/lib/images';
+import type { Brand } from '@/types';
 
 export function ShopByBrands() {
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    brandsApi
+      .list()
+      .then(setBrands)
+      .catch(() => setBrands([]))
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  // Hide section entirely if no brands exist and loading is done
+  if (!isLoading && brands.length === 0) return null;
+
   return (
     <Box component="section" sx={{ bgcolor: '#f4f4f5', py: { xs: 5, md: 7 }, px: { xs: 2, md: 4 } }}>
       <Box sx={{ maxWidth: 1320, mx: 'auto' }}>
@@ -38,71 +51,111 @@ export function ShopByBrands() {
             gap: 2,
           }}
         >
-          {BRANDS.map((brand) => (
-            <Box
-              key={brand.name}
-              component={NextLink}
-              href={brand.href}
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                textDecoration: 'none',
-                borderRadius: '16px',
-                overflow: 'hidden',
-                background: '#101012',
-                transition: 'transform 0.2s',
-                '&:hover': { transform: 'translateY(-4px)' },
-                '&:hover img': { opacity: 0.85 },
-              }}
-            >
-              {/* Brand name overlay top */}
-              <Box
-                sx={{
-                  p: '14px 16px',
-                  fontFamily: '"Saira Condensed", sans-serif',
-                  fontWeight: 800,
-                  fontStyle: 'italic',
-                  fontSize: '20px',
-                  textTransform: 'uppercase',
-                  color: '#fff',
-                  letterSpacing: '0.02em',
-                }}
-              >
-                {brand.name}
-              </Box>
-              {/* Image */}
-              <Box
-                component="img"
-                src={brand.img}
-                alt={brand.name}
-                sx={{
-                  width: '100%',
-                  aspectRatio: '4/3',
-                  objectFit: 'cover',
-                  opacity: 0.75,
-                  transition: 'opacity 0.2s',
-                  flex: 1,
-                }}
-              />
-              {/* Orange footer bar */}
-              <Box
-                sx={{
-                  background: '#f2622a',
-                  py: '10px',
-                  px: '16px',
-                  textAlign: 'center',
-                  fontFamily: '"Saira", sans-serif',
-                  fontWeight: 700,
-                  fontSize: '12px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.1em',
-                  color: '#fff',
-                }}
-              >
-                Shop {brand.name}
-              </Box>
-            </Box>
-          ))}
+          {isLoading
+            ? Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton
+                  key={i}
+                  variant="rectangular"
+                  sx={{ borderRadius: '16px', aspectRatio: '3/4', height: 'auto' }}
+                />
+              ))
+            : brands.map((brand) => (
+                <Box
+                  key={brand.id}
+                  component={NextLink}
+                  href={`/?brand=${encodeURIComponent(brand.name)}`}
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    textDecoration: 'none',
+                    borderRadius: '16px',
+                    overflow: 'hidden',
+                    background: '#101012',
+                    transition: 'transform 0.2s',
+                    '&:hover': { transform: 'translateY(-4px)' },
+                    '&:hover img': { opacity: 0.85 },
+                  }}
+                >
+                  {/* Brand name overlay top */}
+                  <Box
+                    sx={{
+                      p: '14px 16px',
+                      fontFamily: '"Saira Condensed", sans-serif',
+                      fontWeight: 800,
+                      fontStyle: 'italic',
+                      fontSize: '20px',
+                      textTransform: 'uppercase',
+                      color: '#fff',
+                      letterSpacing: '0.02em',
+                    }}
+                  >
+                    {brand.name}
+                  </Box>
+
+                  {/* Brand image */}
+                  {brand.imageUrl ? (
+                    <Box
+                      component="img"
+                      src={resolveImageUrl(brand.imageUrl)}
+                      alt={brand.name}
+                      sx={{
+                        width: '100%',
+                        aspectRatio: '4/3',
+                        objectFit: 'cover',
+                        opacity: 0.75,
+                        transition: 'opacity 0.2s',
+                        flex: 1,
+                      }}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    /* Fallback placeholder when no image is set */
+                    <Box
+                      sx={{
+                        aspectRatio: '4/3',
+                        background: 'linear-gradient(135deg, #1a1a1e 0%, #2d2d35 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          fontFamily: '"Saira Condensed", sans-serif',
+                          fontWeight: 800,
+                          fontStyle: 'italic',
+                          fontSize: '48px',
+                          textTransform: 'uppercase',
+                          color: 'rgba(255,255,255,0.12)',
+                          letterSpacing: '0.02em',
+                        }}
+                      >
+                        {brand.name.charAt(0)}
+                      </Box>
+                    </Box>
+                  )}
+
+                  {/* Orange footer bar */}
+                  <Box
+                    sx={{
+                      background: '#f2622a',
+                      py: '10px',
+                      px: '16px',
+                      textAlign: 'center',
+                      fontFamily: '"Saira", sans-serif',
+                      fontWeight: 700,
+                      fontSize: '12px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.1em',
+                      color: '#fff',
+                    }}
+                  >
+                    Shop {brand.name}
+                  </Box>
+                </Box>
+              ))}
         </Box>
       </Box>
     </Box>

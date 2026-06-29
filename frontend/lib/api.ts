@@ -9,10 +9,13 @@ import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { getToken, clearToken } from './auth';
 import type {
   AuthResponse,
+  Brand,
   Cart,
   Category,
   CatalogFilters,
   CheckoutPayload,
+  ContactQuery,
+  CreateBrandPayload,
   CreateCategoryPayload,
   CreateProductPayload,
   DashboardStats,
@@ -21,6 +24,7 @@ import type {
   PaginatedResponse,
   Product,
   SignupPayload,
+  UpdateBrandPayload,
   UpdateCategoryPayload,
   UpdateOrderStatusPayload,
   UpdateProductPayload,
@@ -177,6 +181,11 @@ export const cartApi = {
 // ---------------------------------------------------------------------------
 
 export const ordersApi = {
+  createPaymentIntent: async (amount: number): Promise<{ clientSecret: string }> => {
+    const { data } = await apiClient.post<{ clientSecret: string }>('/checkout/payment-intent', { amount });
+    return data;
+  },
+
   checkout: async (payload: CheckoutPayload): Promise<Order> => {
     const { data } = await apiClient.post<Order>('/checkout', payload);
     return data;
@@ -200,6 +209,50 @@ export const ordersApi = {
 export const suggestionsApi = {
   getPersonalized: async (): Promise<Product[]> => {
     const { data } = await apiClient.get<Product[]>('/me/suggestions');
+    return data;
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Contact API (public)
+// ---------------------------------------------------------------------------
+
+export const contactApi = {
+  submit: async (payload: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    subject: string;
+    message: string;
+  }): Promise<void> => {
+    await apiClient.post('/contact', payload);
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Favorites API (auth required)
+// ---------------------------------------------------------------------------
+
+export const favoritesApi = {
+  list: async (): Promise<Product[]> => {
+    const { data } = await apiClient.get<Product[]>('/me/favorites');
+    return data;
+  },
+  add: async (productId: string): Promise<void> => {
+    await apiClient.post('/me/favorites', { productId });
+  },
+  remove: async (productId: string): Promise<void> => {
+    await apiClient.delete(`/me/favorites/${productId}`);
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Brands API (public read)
+// ---------------------------------------------------------------------------
+
+export const brandsApi = {
+  list: async (): Promise<Brand[]> => {
+    const { data } = await apiClient.get<Brand[]>('/brands');
     return data;
   },
 };
@@ -295,5 +348,45 @@ export const adminApi = {
 
   deleteCategory: async (id: string): Promise<void> => {
     await apiClient.delete(`/admin/categories/${id}`);
+  },
+
+  // Brands
+  listBrands: async (): Promise<Brand[]> => {
+    const { data } = await apiClient.get<Brand[]>('/admin/brands');
+    return data;
+  },
+
+  createBrand: async (payload: CreateBrandPayload): Promise<Brand> => {
+    const { data } = await apiClient.post<Brand>('/admin/brands', payload);
+    return data;
+  },
+
+  updateBrand: async (id: string, payload: UpdateBrandPayload): Promise<Brand> => {
+    const { data } = await apiClient.patch<Brand>(`/admin/brands/${id}`, payload);
+    return data;
+  },
+
+  deleteBrand: async (id: string): Promise<void> => {
+    await apiClient.delete(`/admin/brands/${id}`);
+  },
+
+  uploadBrandImage: async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const { data } = await apiClient.post<{ url: string }>('/admin/upload/brand', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data.url;
+  },
+
+  // Contact queries
+  listContactQueries: async (): Promise<ContactQuery[]> => {
+    const { data } = await apiClient.get<ContactQuery[]>('/admin/contact-queries');
+    return data;
+  },
+
+  updateContactQueryStatus: async (id: string, status: 'NEW' | 'REVIEWED'): Promise<ContactQuery> => {
+    const { data } = await apiClient.patch<ContactQuery>(`/admin/contact-queries/${id}/status`, { status });
+    return data;
   },
 };

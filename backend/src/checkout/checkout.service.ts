@@ -1,6 +1,8 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import Stripe from 'stripe';
 import { Cart, CartDocument } from '../mongoose/schemas/cart.schema';
 import { Product, ProductDocument } from '../mongoose/schemas/product.schema';
 import { Order, OrderDocument } from '../mongoose/schemas/order.schema';
@@ -8,16 +10,39 @@ import { CheckoutDto } from './dto/checkout.dto';
 
 @Injectable()
 export class CheckoutService {
+  private stripe: Stripe;
+
   constructor(
     @InjectModel(Cart.name) private cartModel: Model<CartDocument>,
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
     @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
-  ) {}
+    private configService: ConfigService,
+  ) {
+    this.stripe = new Stripe(
+      this.configService.get<string>('STRIPE_SECRET_KEY') ?? '',
+      { apiVersion: '2026-06-24.dahlia' as any },
+    );
+  }
+
+  /**
+   * Creates a Stripe PaymentIntent for the given amount in cents.
+   * The client uses the returned clientSecret to confirm payment on the frontend.
+   */
+  async createPaymentIntent(amountCents: number) {
+    const intent = await this.stripe.paymentIntents.create({
+      amount: amountCents,
+      currency: 'usd',
+      automatic_payment_methods: { enabled: true },
+    });
+    return { clientSecret: intent.client_secret };
+  }
 
   /**
    * Sequential checkout (no replica set in dev, so no native MongoDB transactions).
-   * Operations: validate stock → compute total → create order → decrement stock → clear cart.
-   * MOCK payment: paymentRef = `mock_${Date.now()}_${userId}`
+   * Operations: validate stock → compute total → verify Stripe payment (if provided) →
+   * create order → decrement stock → clear cart.
+   * If paymentIntentId is present in the DTO, it is verified with Stripe before the
+   * order is persisted. Falls back to mock paymentRef when no paymentIntentId is sent.
    */
   async checkout(userId: string, dto: CheckoutDto) {
     const cart = await this.cartModel.findOne({ userId: new Types.ObjectId(userId) });
@@ -41,8 +66,17 @@ export class CheckoutService {
       return sum + item.quantity * productMap[item.productId.toString()].priceCents;
     }, 0);
 
-    // Step 4 (deferred to after order creation): snapshot prices for order items
-    const paymentRef = `mock_${Date.now()}_${userId}`;
+    // Step 4: Determine paymentRef — verify real Stripe intent or use mock fallback
+    let paymentRef = `mock_${Date.now()}_${userId}`;
+    if (dto.paymentIntentId) {
+      const intent = await this.stripe.paymentIntents.retrieve(dto.paymentIntentId);
+      if (intent.status !== 'succeeded') {
+        throw new BadRequestException('Payment not completed');
+      }
+      paymentRef = dto.paymentIntentId;
+    }
+
+    // Step 5: Snapshot prices for order items
     const orderItems = (cart.items as any[]).map((item) => {
       const prod = productMap[item.productId.toString()];
       return {
@@ -53,7 +87,7 @@ export class CheckoutService {
       };
     });
 
-    // Step 5: Create Order with snapshotted prices
+    // Step 6: Create Order with snapshotted prices
     const order = await this.orderModel.create({
       userId: new Types.ObjectId(userId),
       totalCents,
@@ -67,20 +101,20 @@ export class CheckoutService {
       items: orderItems,
     });
 
-    // Step 6: Decrement stock
+    // Step 7: Decrement stock
     for (const item of cart.items as any[]) {
       await this.productModel.findByIdAndUpdate(item.productId, {
         $inc: { stockQuantity: -item.quantity },
       });
     }
 
-    // Step 7: Clear cart
+    // Step 8: Clear cart
     await this.cartModel.updateOne(
       { userId: new Types.ObjectId(userId) },
       { $set: { items: [] } },
     );
 
-    // Step 8: Return populated order
+    // Step 9: Return populated order
     const populated = await this.orderModel.findById(order._id).lean({ virtuals: true });
     if (!populated) return order;
 

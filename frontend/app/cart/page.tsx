@@ -121,9 +121,9 @@ export default function CartPage() {
   const grandTotalCents = subtotalCents + shippingCents;
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#f4f4f5' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#f4f4f5', display: 'flex', flexDirection: 'column' }}>
       <Navbar />
-      <Box component="main" sx={{ maxWidth: 1200, mx: 'auto', px: { xs: 2, md: 4 }, py: 5 }}>
+      <Box component="main" sx={{ flex: 1, maxWidth: 1200, mx: 'auto', px: { xs: 2, md: 4 }, py: 5, width: '100%' }}>
         {/* Page header */}
         <Box sx={{ mb: 4 }}>
           <Typography

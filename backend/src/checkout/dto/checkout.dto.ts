@@ -1,4 +1,4 @@
-import { IsString, MinLength } from 'class-validator';
+import { IsString, MinLength, IsOptional } from 'class-validator';
 
 export class CheckoutDto {
   @IsString()
@@ -20,4 +20,8 @@ export class CheckoutDto {
   @IsString()
   @MinLength(2)
   country: string;
+
+  @IsOptional()
+  @IsString()
+  paymentIntentId?: string;
 }

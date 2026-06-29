@@ -3,23 +3,18 @@
 import NextLink from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { Badge, Box, IconButton, Menu, MenuItem, Typography, InputBase } from '@mui/material';
+import { Badge, Box, IconButton, Menu, MenuItem, Typography } from '@mui/material';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useCart } from '@/lib/hooks/useCart';
 import { useAuthStore } from '@/store/authStore';
+import { useCartStore } from '@/store/cartStore';
 import { useUiStore } from '@/store/uiStore';
+import { useFavoritesStore } from '@/store/favoritesStore';
 import { AuthDrawer } from './AuthDrawer';
 import { CartDrawer } from '../cart/CartDrawer';
-
-const NAV_LINKS: { label: string; href: string; highlight?: boolean }[] = [
-  { label: 'Shop By Brands', href: '/?category=Brands' },
-  { label: 'Men', href: '/?category=Men' },
-  { label: 'Women', href: '/?category=Women' },
-  { label: 'Kids', href: '/?category=Kids' },
-  { label: 'Accessories & Equipment', href: '/?category=Equipment' },
-  { label: 'New Arrivals', href: '/?sort=newest', highlight: true },
-  { label: 'Sale', href: '/?sort=price_asc' },
-];
+import { useSnackbar } from 'notistack';
+import { categoriesApi } from '@/lib/api';
+import type { Category } from '@/types';
 
 function ApexLogo() {
   return (
@@ -81,11 +76,17 @@ export function Navbar() {
   const isAdminPath = pathname?.startsWith('/admin') ?? false;
   const { user, isAuthenticated, logout } = useAuth();
   const { itemCount } = useCart();
+  const { enqueueSnackbar } = useSnackbar();
+  const favoritesCount = useFavoritesStore((s) => s.favoriteIds.size);
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [pendingCart, setPendingCart] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    categoriesApi.list().then(setCategories).catch(() => {});
+  }, []);
 
   const searchParams = useSearchParams();
   const { authPromptOpen, redirectAfterAuth, openAuthPrompt, closeAuthPrompt } = useUiStore();
@@ -116,31 +117,28 @@ export function Navbar() {
   const handleMenuClose = () => setAnchorEl(null);
   const handleLogout = () => {
     logout();
+    useCartStore.getState().clearCart();
     handleMenuClose();
+    enqueueSnackbar('You have been signed out.', { variant: 'info' });
     router.push('/');
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/?search=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
 
   if (isAdminPath) return null;
 
   return (
     <header style={{ position: 'sticky', top: 0, zIndex: 100 }}>
       {/* Top bar: logo + search + icons */}
+      <Box sx={{ bgcolor: '#fff', borderBottom: '1px solid #f0f0f1' }}>
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
           gap: 3,
-          px: 4,
+          maxWidth: 1320,
+          mx: 'auto',
+          px: { xs: 2, md: 4 },
           py: 2,
-          bgcolor: '#fff',
-          borderBottom: '1px solid #f0f0f1',
         }}
       >
         {/* Logo */}
@@ -148,67 +146,13 @@ export function Navbar() {
           <ApexLogo />
         </Box>
 
-        {/* Search */}
-        <Box
-          component="form"
-          onSubmit={handleSearch}
-          sx={{
-            flex: 1,
-            maxWidth: 720,
-            position: 'relative',
-          }}
-        >
-          <InputBase
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search for shoes, apparel, gear…"
-            sx={{
-              width: '100%',
-              height: 48,
-              border: '1.5px solid #e7e7ea',
-              borderRadius: 999,
-              px: '22px',
-              pr: '56px',
-              fontFamily: '"Manrope", sans-serif',
-              fontSize: '14.5px',
-              background: '#fafafa',
-              color: '#18181b',
-              '&.Mui-focused': { borderColor: '#f2622a', background: '#fff' },
-              transition: 'border-color 0.2s, background 0.2s',
-            }}
-          />
-          <Box
-            component="button"
-            type="submit"
-            sx={{
-              position: 'absolute',
-              right: 5,
-              top: 5,
-              width: 38,
-              height: 38,
-              border: 'none',
-              borderRadius: '50%',
-              background: '#f2622a',
-              color: '#fff',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              '&:hover': { background: '#d94e18' },
-              transition: 'background 0.2s',
-            }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
-              <circle cx="11" cy="11" r="7" />
-              <path d="M21 21l-4.3-4.3" />
-            </svg>
-          </Box>
-        </Box>
 
         {/* Icon actions */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px', ml: 'auto' }}>
           {/* Wishlist */}
           <IconButton
+            component={NextLink}
+            href="/favorites"
             sx={{
               width: 44,
               height: 44,
@@ -216,11 +160,28 @@ export function Navbar() {
               color: '#18181b',
               '&:hover': { background: '#f4f4f5' },
             }}
-            aria-label="Wishlist"
+            aria-label={`Wishlist — ${favoritesCount} items`}
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z" />
-            </svg>
+            <Badge
+              badgeContent={favoritesCount || 0}
+              sx={{
+                '& .MuiBadge-badge': {
+                  background: '#f2622a',
+                  color: '#fff',
+                  fontFamily: '"Saira", sans-serif',
+                  fontWeight: 800,
+                  fontSize: '11px',
+                  minWidth: 18,
+                  height: 18,
+                  padding: '0 4px',
+                  borderRadius: '9px',
+                },
+              }}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z" />
+              </svg>
+            </Badge>
           </IconButton>
 
           {/* Account */}
@@ -361,9 +322,11 @@ export function Navbar() {
           </MenuItem>
         </Menu>
       </Box>
+      </Box>
 
       {/* Dark nav strip */}
-      <Box component="nav" sx={{ bgcolor: '#101012', px: 4 }}>
+      <Box component="nav" sx={{ bgcolor: '#101012' }}>
+        <Box sx={{ maxWidth: 1320, mx: 'auto', px: { xs: 2, md: 4 } }}>
         <Box
           component="ul"
           sx={{
@@ -375,17 +338,18 @@ export function Navbar() {
             gap: '2px',
           }}
         >
-          {NAV_LINKS.map((link) => (
-            <Box component="li" key={link.label} sx={{ display: 'flex' }}>
+          {categories.map((cat) => (
+            <Box component="li" key={cat.id} sx={{ display: 'flex' }}>
               <Box
                 component={NextLink}
-                href={link.href}
-                sx={getNavLinkSx(link.highlight)}
+                href={`/?category=${encodeURIComponent(cat.name)}`}
+                sx={getNavLinkSx()}
               >
-                {link.label}
+                {cat.name}
               </Box>
             </Box>
           ))}
+        </Box>
         </Box>
       </Box>
     </header>

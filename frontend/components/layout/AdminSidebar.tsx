@@ -17,6 +17,8 @@ import {
   ShoppingBag,
   Logout,
   Category as CategoryIcon,
+  Sell,
+  Inbox,
 } from '@mui/icons-material';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
@@ -25,7 +27,9 @@ const NAV_ITEMS = [
   { label: 'Dashboard', href: '/admin', icon: <Dashboard /> },
   { label: 'Products', href: '/admin/products', icon: <Inventory /> },
   { label: 'Categories', href: '/admin/categories', icon: <CategoryIcon /> },
+  { label: 'Brands', href: '/admin/brands', icon: <Sell /> },
   { label: 'Orders', href: '/admin/orders', icon: <ShoppingBag /> },
+  { label: 'Queries', href: '/admin/contact-queries', icon: <Inbox /> },
 ];
 
 export function AdminSidebar() {

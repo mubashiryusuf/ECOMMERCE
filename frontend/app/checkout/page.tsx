@@ -83,21 +83,34 @@ export default function CheckoutPage() {
 
   const [activeStep, setActiveStep] = useState(0);
   const [shippingData, setShippingData] = useState<Partial<CheckoutPayload>>({});
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleShippingNext = (data: Omit<CheckoutPayload, 'paymentToken'>) => {
+  // Step 1 → Step 2: save shipping, then create a PaymentIntent server-side.
+  const handleShippingNext = async (data: Omit<CheckoutPayload, 'paymentIntentId'>) => {
     setShippingData(data);
-    setActiveStep(1);
+    setError(null);
+    try {
+      // Read cart total from store without subscribing — avoids a re-render dependency.
+      const cart = useCartStore.getState().cart;
+      const totalCents = cart?.totalCents ?? 0;
+      const { clientSecret: secret } = await ordersApi.createPaymentIntent(totalCents);
+      setClientSecret(secret);
+      setActiveStep(1);
+    } catch {
+      setError('Failed to initialise payment. Please try again.');
+    }
   };
 
-  const handlePaymentConfirm = async () => {
+  // Called by PaymentStep after Stripe confirms the card payment.
+  const handleStripeSuccess = async (paymentIntentId: string) => {
     setIsSubmitting(true);
     setError(null);
     try {
       const payload: CheckoutPayload = {
         ...(shippingData as CheckoutPayload),
-        paymentToken: 'mock_payment_token_test_only',
+        paymentIntentId: paymentIntentId,
       };
       const order = await ordersApi.checkout(payload);
       clearCart();
@@ -115,11 +128,11 @@ export default function CheckoutPage() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#f4f4f5' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#f4f4f5', display: 'flex', flexDirection: 'column' }}>
       <Navbar />
       <Box
         component="main"
-        sx={{ maxWidth: 760, mx: 'auto', px: { xs: 2, md: 3 }, py: 5 }}
+        sx={{ flex: 1, maxWidth: 760, mx: 'auto', px: { xs: 2, md: 3 }, py: 5, width: '100%' }}
       >
         {/* Page header */}
         <Box sx={{ mb: 4 }}>
@@ -142,7 +155,7 @@ export default function CheckoutPage() {
           </Typography>
         </Box>
 
-        {/* APEX step indicators */}
+        {/* Step indicators */}
         <ApexStepper steps={STEPS} activeStep={activeStep} />
 
         {error && (
@@ -171,9 +184,10 @@ export default function CheckoutPage() {
             />
           )}
 
-          {activeStep === 1 && (
+          {activeStep === 1 && clientSecret && (
             <PaymentStep
-              onConfirm={handlePaymentConfirm}
+              clientSecret={clientSecret}
+              onSuccess={handleStripeSuccess}
               onBack={() => setActiveStep(0)}
               isSubmitting={isSubmitting}
             />

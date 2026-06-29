@@ -12,19 +12,49 @@ export function HeroSection() {
         background: '#101012',
         overflow: 'hidden',
         minHeight: { xs: 420, md: 520 },
-        display: 'grid',
-        gridTemplateColumns: { xs: '1fr', md: '1.1fr 1fr' },
+        display: 'flex',
+        alignItems: 'center',
       }}
     >
-      {/* Left content */}
+      {/* Full-width background image */}
+      <Box
+        component="img"
+        src="https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=1400&q=80"
+        alt="Athlete training"
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          objectPosition: 'center top',
+          opacity: 0.35,
+        }}
+      />
+
+      {/* Dark overlay */}
       <Box
         sx={{
-          padding: { xs: '52px 28px 52px', md: '72px 56px' },
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
+          position: 'absolute',
+          inset: 0,
+          background: 'linear-gradient(90deg, rgba(16,16,18,0.85) 0%, rgba(16,16,18,0.45) 100%)',
+        }}
+      />
+
+      {/* Centered content */}
+      <Box
+        sx={{
           position: 'relative',
           zIndex: 2,
+          maxWidth: 1320,
+          mx: 'auto',
+          px: { xs: 2, md: 4 },
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          textAlign: 'center',
+          py: { xs: '52px', md: '80px' },
         }}
       >
         <Box
@@ -47,7 +77,7 @@ export function HeroSection() {
             fontFamily: '"Saira Condensed", sans-serif',
             fontWeight: 800,
             fontStyle: 'italic',
-            fontSize: { xs: '50px', md: '68px', lg: '80px' },
+            fontSize: { xs: '50px', md: '72px', lg: '88px' },
             lineHeight: 0.92,
             color: '#fff',
             m: 0,
@@ -56,8 +86,7 @@ export function HeroSection() {
             mb: 3,
           }}
         >
-          Gear Up for<br />
-          Greatness With<br />
+          Gear Up for Greatness With<br />
           <Box component="span" sx={{ color: '#f2622a' }}>New Arrivals</Box>
         </Box>
 
@@ -73,7 +102,6 @@ export function HeroSection() {
             px: '20px',
             py: '10px',
             mb: 4,
-            width: 'fit-content',
           }}
         >
           {['Apparel', 'Footwear', 'Hardware'].map((label, i) => (
@@ -97,7 +125,7 @@ export function HeroSection() {
           ))}
         </Box>
 
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
           <Box
             component={NextLink}
             href="/?sort=newest"
@@ -146,23 +174,6 @@ export function HeroSection() {
             Explore Sale
           </Box>
         </Box>
-      </Box>
-
-      {/* Right image */}
-      <Box sx={{ position: 'relative', overflow: 'hidden', display: { xs: 'none', md: 'block' } }}>
-        <Box
-          component="img"
-          src="https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=1000&q=80"
-          alt="Athlete training"
-          sx={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }}
-        />
-        <Box
-          sx={{
-            position: 'absolute',
-            inset: 0,
-            background: 'linear-gradient(90deg, #101012 0%, rgba(16,16,18,0) 35%)',
-          }}
-        />
       </Box>
 
       {/* Orange right accent bar */}

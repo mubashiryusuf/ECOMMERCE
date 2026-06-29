@@ -46,6 +46,7 @@ export interface Product {
   /** All product images; imageUrl is always images[0]. Falls back to [imageUrl] when absent. */
   images?: string[];
   category: string;
+  brand?: string | null;
   /** Must be >= 0. Zero means out of stock. */
   stockQuantity: number;
   createdAt: string;
@@ -170,8 +171,7 @@ export interface CheckoutPayload {
   city: string;
   postalCode: string;
   country: string;
-  /** Mock payment token — never a real card number */
-  paymentToken?: string;
+  paymentIntentId?: string;
 }
 
 export interface UpdateOrderStatusPayload {
@@ -186,6 +186,7 @@ export interface CreateProductPayload {
   imageUrl: string;
   images?: string[];
   category: string;
+  brand?: string;
   stockQuantity: number;
 }
 
@@ -198,6 +199,7 @@ export type UpdateProductPayload = Partial<CreateProductPayload>;
 export interface CatalogFilters {
   search?: string;
   category?: string;
+  brand?: string;
   minPrice?: number; // in cents
   maxPrice?: number; // in cents
   sort?: 'price_asc' | 'price_desc' | 'newest';
@@ -223,3 +225,36 @@ export interface CreateCategoryPayload {
 }
 
 export type UpdateCategoryPayload = Partial<CreateCategoryPayload>;
+
+// ---------------------------------------------------------------------------
+// Brand
+// ---------------------------------------------------------------------------
+
+export interface Brand {
+  id: string;
+  name: string;
+  imageUrl: string;
+  createdAt: string;
+}
+
+export interface CreateBrandPayload {
+  name: string;
+  imageUrl?: string;
+}
+
+export type UpdateBrandPayload = Partial<CreateBrandPayload>;
+
+// ---------------------------------------------------------------------------
+// Contact
+// ---------------------------------------------------------------------------
+
+export interface ContactQuery {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  subject: string;
+  message: string;
+  status: 'NEW' | 'REVIEWED';
+  createdAt: string;
+}

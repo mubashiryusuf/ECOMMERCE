@@ -210,11 +210,11 @@ export function Footer() {
           {/* Help column */}
           <Box>
             <ColHeading>Help</ColHeading>
-            <FooterLink href="/">Returns &amp; Exchanges</FooterLink>
-            <FooterLink href="/">Shipping</FooterLink>
+            <FooterLink href="/returns">Returns &amp; Exchanges</FooterLink>
+            <FooterLink href="/shipping">Shipping</FooterLink>
             <FooterLink href="/orders">Order Tracking</FooterLink>
-            <FooterLink href="/">FAQs</FooterLink>
-            <FooterLink href="/">Contact</FooterLink>
+            <FooterLink href="/faqs">FAQs</FooterLink>
+            <FooterLink href="/contact">Contact</FooterLink>
           </Box>
 
           {/* Follow column */}

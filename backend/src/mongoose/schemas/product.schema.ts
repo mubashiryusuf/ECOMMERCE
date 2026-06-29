@@ -21,6 +21,7 @@ export class Product {
   @Prop({ required: true }) imageUrl: string;
   @Prop({ type: [String], default: [] }) images: string[];
   @Prop({ required: true }) category: string;
+  @Prop({ default: null }) brand: string | null;
   @Prop({ required: true, default: 0, type: Number }) stockQuantity: number;
   createdAt: Date;
   updatedAt: Date;

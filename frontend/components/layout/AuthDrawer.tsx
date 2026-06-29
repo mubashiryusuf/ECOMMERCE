@@ -7,6 +7,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { GoogleLogin } from '@react-oauth/google';
+import { useSnackbar } from 'notistack';
 import { useAuthStore } from '@/store/authStore';
 
 const loginSchema = z.object({
@@ -81,6 +82,7 @@ function ApexButton({ children, loading, onClick, type = 'button', variant = 'so
 
 function SignInForm({ onSuccess, onAuthSuccess }: { onSuccess: () => void; onAuthSuccess?: () => void }) {
   const { login, isLoading } = useAuthStore();
+  const { enqueueSnackbar } = useSnackbar();
   const [error, setError] = useState<string | null>(null);
   const { control, handleSubmit, formState: { errors } } = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -91,8 +93,7 @@ function SignInForm({ onSuccess, onAuthSuccess }: { onSuccess: () => void; onAut
     setError(null);
     try {
       await login(values.email, values.password);
-      // Close the drawer first, then run the post-auth callback.
-      // Use the store snapshot (synchronously set by login()) to check role.
+      enqueueSnackbar('Welcome back!', { variant: 'success' });
       onSuccess();
       onAuthSuccess?.();
     } catch (err: unknown) {
@@ -103,7 +104,10 @@ function SignInForm({ onSuccess, onAuthSuccess }: { onSuccess: () => void; onAut
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
+    <form
+      onSubmit={(e) => { e.preventDefault(); handleSubmit(onSubmit)(e); }}
+      noValidate
+    >
       {error && (
         <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2, borderRadius: '10px' }}>
           {error}
@@ -150,12 +154,13 @@ function SignInForm({ onSuccess, onAuthSuccess }: { onSuccess: () => void; onAut
       <ApexButton variant="outline" onClick={() => onSuccess()}>
         Guest Checkout
       </ApexButton>
-    </Box>
+    </form>
   );
 }
 
 function SignUpForm({ onSuccess, onAuthSuccess }: { onSuccess: () => void; onAuthSuccess?: () => void }) {
   const { signup, isLoading } = useAuthStore();
+  const { enqueueSnackbar } = useSnackbar();
   const [error, setError] = useState<string | null>(null);
   const { control, handleSubmit, formState: { errors } } = useForm<SignupValues>({
     resolver: zodResolver(signupSchema),
@@ -166,6 +171,7 @@ function SignUpForm({ onSuccess, onAuthSuccess }: { onSuccess: () => void; onAut
     setError(null);
     try {
       await signup(values.name, values.email, values.password);
+      enqueueSnackbar('Account created! Welcome to APEX.', { variant: 'success' });
       onSuccess();
       onAuthSuccess?.();
     } catch (err: unknown) {
@@ -176,7 +182,10 @@ function SignUpForm({ onSuccess, onAuthSuccess }: { onSuccess: () => void; onAut
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
+    <form
+      onSubmit={(e) => { e.preventDefault(); handleSubmit(onSubmit)(e); }}
+      noValidate
+    >
       {error && (
         <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2, borderRadius: '10px' }}>
           {error}
@@ -216,7 +225,7 @@ function SignUpForm({ onSuccess, onAuthSuccess }: { onSuccess: () => void; onAut
         />
       </Box>
       <ApexButton type="submit" loading={isLoading}>Create Account</ApexButton>
-    </Box>
+    </form>
   );
 }
 
@@ -243,6 +252,7 @@ export function AuthDrawer({ open, onClose, onAuthSuccess }: AuthDrawerProps) {
   const TabBtn = ({ id, label }: { id: 'signin' | 'signup'; label: string }) => (
     <Box
       component="button"
+      type="button"
       onClick={() => setTab(id)}
       sx={getTabSx(tab === id)}
     >
@@ -272,6 +282,7 @@ export function AuthDrawer({ open, onClose, onAuthSuccess }: AuthDrawerProps) {
         </Box>
         <Box
           component="button"
+          type="button"
           onClick={onClose}
           sx={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#71717a', display: 'flex', p: '4px', borderRadius: '8px', '&:hover': { background: '#f4f4f5' } }}
         >

@@ -14,7 +14,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { FilterList } from '@mui/icons-material';
-import { productsApi } from '@/lib/api';
+import { productsApi, categoriesApi } from '@/lib/api';
 import { ProductCard } from './ProductCard';
 import { FilterPanel } from './FilterPanel';
 import { SearchBar } from './SearchBar';
@@ -57,6 +57,7 @@ export function ProductGrid({
 
   const [data, setData] = useState<PaginatedResponse<Product> | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
@@ -64,6 +65,7 @@ export function ProductGrid({
   // Read current filter state from URL (takes precedence over initial props)
   const search = searchParams.get('search') ?? initialSearch ?? '';
   const category = searchParams.get('category') ?? initialCategory ?? '';
+  const brand = searchParams.get('brand') ?? '';
   const minPrice = searchParams.get('minPrice')
     ? Number(searchParams.get('minPrice'))
     : initialMinPrice;
@@ -73,9 +75,12 @@ export function ProductGrid({
   const sort = (searchParams.get('sort') ?? initialSort) as 'price_asc' | 'price_desc' | 'newest';
   const page = searchParams.get('page') ? Number(searchParams.get('page')) : initialPage;
 
-  // Fetch categories for the filter panel
+  // Fetch admin-managed categories for the filter panel
   useEffect(() => {
-    productsApi.getCategories().then(setCategories).catch(console.error);
+    categoriesApi.list()
+      .then((cats) => setCategories(cats.map((c) => c.name)))
+      .catch(console.error)
+      .finally(() => setCategoriesLoading(false));
   }, []);
 
   const fetchProducts = useCallback(async () => {
@@ -85,6 +90,7 @@ export function ProductGrid({
       const result = await productsApi.list({
         search: search || undefined,
         category: category || undefined,
+        brand: brand || undefined,
         minPrice: minPrice > 0 ? minPrice : undefined,
         maxPrice: maxPrice < DEFAULT_MAX_PRICE_CENTS ? maxPrice : undefined,
         sort: sort || undefined,
@@ -97,7 +103,7 @@ export function ProductGrid({
     } finally {
       setIsLoading(false);
     }
-  }, [search, category, minPrice, maxPrice, sort, page]);
+  }, [search, category, brand, minPrice, maxPrice, sort, page]);
 
   useEffect(() => {
     fetchProducts();
@@ -147,6 +153,7 @@ export function ProductGrid({
   const filterPanel = (
     <FilterPanel
       categories={categories}
+      categoriesLoading={categoriesLoading}
       selectedCategories={category ? [category] : []}
       onCategoryChange={handleCategoryChange}
       priceRange={[minPrice, maxPrice]}

@@ -37,11 +37,11 @@ export default function OrderDetailPage() {
   }, [params?.id]);
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#f4f4f5' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#f4f4f5', display: 'flex', flexDirection: 'column' }}>
       <Navbar />
       <Box
         component="main"
-        sx={{ maxWidth: 960, mx: 'auto', px: { xs: 2, md: 3 }, py: 5 }}
+        sx={{ flex: 1, maxWidth: 960, mx: 'auto', px: { xs: 2, md: 3 }, py: 5, width: '100%' }}
       >
         {/* Back link */}
         <Box

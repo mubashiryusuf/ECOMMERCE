@@ -16,6 +16,10 @@ export class QueryProductsDto {
   @IsString()
   category?: string;
 
+  @IsOptional()
+  @IsString()
+  brand?: string;
+
   /** Minimum price in cents (integer) */
   @IsOptional()
   @Type(() => Number)

@@ -10,6 +10,9 @@ import { OrdersModule } from './orders/orders.module';
 import { SuggestionsModule } from './suggestions/suggestions.module';
 import { AdminModule } from './admin/admin.module';
 import { CategoriesModule } from './categories/categories.module';
+import { FavoritesModule } from './favorites/favorites.module';
+import { BrandsModule } from './brands/brands.module';
+import { ContactModule } from './contact/contact.module';
 
 @Module({
   imports: [
@@ -29,6 +32,9 @@ import { CategoriesModule } from './categories/categories.module';
     SuggestionsModule,
     AdminModule,
     CategoriesModule,
+    FavoritesModule,
+    BrandsModule,
+    ContactModule,
   ],
 })
 export class AppModule {}

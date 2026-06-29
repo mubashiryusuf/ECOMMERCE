@@ -8,6 +8,7 @@
 import { create } from 'zustand';
 import { authApi } from '@/lib/api';
 import { getToken, setToken, clearToken, isTokenExpired } from '@/lib/auth';
+import { useFavoritesStore } from './favoritesStore';
 import type { User, LoginPayload, SignupPayload } from '@/types';
 
 interface AuthState {
@@ -89,6 +90,8 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
   logout: () => {
     clearToken();
     set({ user: null, token: null, error: null });
+    // Clear persisted favourites from the client-side store on sign-out
+    useFavoritesStore.getState().setFavoriteIds([]);
   },
 
   /**

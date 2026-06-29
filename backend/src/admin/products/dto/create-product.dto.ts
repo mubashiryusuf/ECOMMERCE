@@ -45,4 +45,8 @@ export class CreateProductDto {
   @IsInt()
   @Min(0)
   stockQuantity: number;
+
+  @IsOptional()
+  @IsString()
+  brand?: string;
 }
