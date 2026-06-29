@@ -1,5 +1,11 @@
 import { Controller, Post, Get, Body, UseGuards, HttpCode } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+} from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
@@ -13,13 +19,51 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  @ApiOperation({ summary: 'Create a CUSTOMER account and receive a JWT' })
+  @ApiOperation({ summary: 'Register a new CUSTOMER account' })
+  @ApiBody({ type: SignupDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Account created — returns JWT token and user profile',
+    schema: {
+      example: {
+        token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        user: {
+          id: 'clxyz123',
+          email: 'jane@example.com',
+          name: 'Jane Doe',
+          role: 'CUSTOMER',
+          createdAt: '2026-06-29T10:00:00.000Z',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 409, description: 'Email already in use' })
+  @ApiResponse({ status: 400, description: 'Validation error — check request body' })
   @Post('signup')
   signup(@Body() dto: SignupDto) {
     return this.authService.signup(dto);
   }
 
-  @ApiOperation({ summary: 'Log in and receive a JWT' })
+  @ApiOperation({ summary: 'Log in with email and password' })
+  @ApiBody({ type: LoginDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Login successful — returns JWT token and user profile',
+    schema: {
+      example: {
+        token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        user: {
+          id: 'clxyz123',
+          email: 'jane@example.com',
+          name: 'Jane Doe',
+          role: 'CUSTOMER',
+          createdAt: '2026-06-29T10:00:00.000Z',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
+  @ApiResponse({ status: 400, description: 'Validation error — check request body' })
   @HttpCode(200)
   @Post('login')
   login(@Body() dto: LoginDto) {
@@ -27,7 +71,21 @@ export class AuthController {
   }
 
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Return the authenticated user profile (no passwordHash)' })
+  @ApiOperation({ summary: 'Get the currently authenticated user profile' })
+  @ApiResponse({
+    status: 200,
+    description: 'Authenticated user profile (passwordHash never returned)',
+    schema: {
+      example: {
+        id: 'clxyz123',
+        email: 'jane@example.com',
+        name: 'Jane Doe',
+        role: 'CUSTOMER',
+        createdAt: '2026-06-29T10:00:00.000Z',
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Missing or invalid Bearer token' })
   @UseGuards(JwtAuthGuard)
   @Get('me')
   me(@CurrentUser() user: any) {
@@ -37,16 +95,47 @@ export class AuthController {
   @ApiOperation({
     summary: 'Request a password-reset token',
     description:
-      'MOCK: In production the token is emailed. In non-production environments the ' +
-      'resetToken is returned in the response body so the flow can be tested without SMTP.',
+      '**MOCK mode:** In production the reset link would be emailed. ' +
+      'In non-production environments the `resetToken` is returned directly in the ' +
+      'response body so the flow can be tested without an SMTP server. ' +
+      'Use the returned token as the `token` field in `POST /auth/reset-password`.',
   })
+  @ApiBody({ type: ForgotPasswordDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Reset token generated (non-prod: token returned in body; prod: emailed only)',
+    schema: {
+      example: {
+        message: 'If that email is registered you will receive a reset link.',
+        resetToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... (15-min expiry)',
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Validation error — must be a valid email' })
   @HttpCode(200)
   @Post('forgot-password')
   forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.authService.forgotPassword(dto);
   }
 
-  @ApiOperation({ summary: 'Reset password using the token from forgot-password' })
+  @ApiOperation({
+    summary: 'Reset password using the token from forgot-password',
+    description:
+      'Paste the `resetToken` from `POST /auth/forgot-password` into the `token` field. ' +
+      'The token is valid for **15 minutes** and can only be used once.',
+  })
+  @ApiBody({ type: ResetPasswordDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Password updated — log in again with the new password',
+    schema: {
+      example: {
+        message: 'Password updated successfully. Please log in with your new password.',
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Token is invalid or has expired' })
+  @ApiResponse({ status: 404, description: 'User not found' })
   @HttpCode(200)
   @Post('reset-password')
   resetPassword(@Body() dto: ResetPasswordDto) {
