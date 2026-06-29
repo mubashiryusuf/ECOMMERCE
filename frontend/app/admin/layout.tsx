@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Box, CircularProgress } from '@mui/material';
 import { useAuthStore } from '@/store/authStore';
+import { getToken } from '@/lib/auth';
 import { AdminSidebar } from '@/components/layout/AdminSidebar';
 
 interface AdminLayoutProps {
@@ -12,13 +13,6 @@ interface AdminLayoutProps {
 
 const SIDEBAR_WIDTH = 260;
 
-/**
- * Admin layout — client component.
- *
- * Auth guard: if no user or user.role !== 'ADMIN', redirect to storefront root.
- * The middleware.ts handles the initial server-side redirect; this guard
- * handles the case where the store is populated after hydration.
- */
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const router = useRouter();
   const { user, isLoading, loadUser } = useAuthStore();
@@ -28,11 +22,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!isLoading && !user) {
-      router.replace('/login?redirect=/admin');
+    if (isLoading) return;
+    if (!user) {
+      // If no token exists at all, redirect home immediately.
+      // If a token exists, loadUser() is still in flight — wait for it.
+      if (!getToken()) router.replace('/');
       return;
     }
-    if (!isLoading && user && user.role !== 'ADMIN') {
+    if (user.role !== 'ADMIN') {
       router.replace('/');
     }
   }, [user, isLoading, router]);
