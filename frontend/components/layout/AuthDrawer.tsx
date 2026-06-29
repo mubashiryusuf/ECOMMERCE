@@ -26,6 +26,7 @@ type SignupValues = z.infer<typeof signupSchema>;
 interface AuthDrawerProps {
   open: boolean;
   onClose: () => void;
+  onAuthSuccess?: () => void;
   redirectTo?: string;
 }
 
@@ -78,7 +79,7 @@ function ApexButton({ children, loading, onClick, type = 'button', variant = 'so
   );
 }
 
-function SignInForm({ onSuccess }: { onSuccess: () => void }) {
+function SignInForm({ onSuccess, onAuthSuccess }: { onSuccess: () => void; onAuthSuccess?: () => void }) {
   const { login, isLoading } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
   const { control, handleSubmit, formState: { errors } } = useForm<LoginValues>({
@@ -91,6 +92,7 @@ function SignInForm({ onSuccess }: { onSuccess: () => void }) {
     try {
       await login(values.email, values.password);
       onSuccess();
+      setTimeout(() => onAuthSuccess?.(), 350);
     } catch (err: unknown) {
       setError(
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Invalid email or password',
@@ -150,7 +152,7 @@ function SignInForm({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
-function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
+function SignUpForm({ onSuccess, onAuthSuccess }: { onSuccess: () => void; onAuthSuccess?: () => void }) {
   const { signup, isLoading } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
   const { control, handleSubmit, formState: { errors } } = useForm<SignupValues>({
@@ -163,6 +165,7 @@ function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
     try {
       await signup(values.name, values.email, values.password);
       onSuccess();
+      setTimeout(() => onAuthSuccess?.(), 350);
     } catch (err: unknown) {
       setError(
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Could not create account',
@@ -215,7 +218,7 @@ function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
-export function AuthDrawer({ open, onClose }: AuthDrawerProps) {
+export function AuthDrawer({ open, onClose, onAuthSuccess }: AuthDrawerProps) {
   const [tab, setTab] = useState<'signin' | 'signup'>('signin');
   const { loginWithGoogle } = useAuthStore();
 
@@ -248,7 +251,15 @@ export function AuthDrawer({ open, onClose }: AuthDrawerProps) {
       anchor="right"
       open={open}
       onClose={onClose}
-      PaperProps={{ sx: { width: { xs: '100%', sm: 400 }, p: '28px', overflowY: 'auto' } }}
+      PaperProps={{
+        sx: {
+          width: { xs: '100%', sm: 400 },
+          p: '28px',
+          overflowY: 'auto',
+          background: '#fff',
+          color: '#18181b',
+        },
+      }}
     >
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -271,7 +282,9 @@ export function AuthDrawer({ open, onClose }: AuthDrawerProps) {
         <GoogleLogin
           onSuccess={(cr) => {
             if (cr.credential) {
-              loginWithGoogle(cr.credential).then(onClose).catch(() => {});
+              loginWithGoogle(cr.credential)
+                .then(() => { onClose(); setTimeout(() => onAuthSuccess?.(), 350); })
+                .catch(() => {});
             }
           }}
           onError={() => {}}
@@ -295,9 +308,9 @@ export function AuthDrawer({ open, onClose }: AuthDrawerProps) {
 
       {/* Form */}
       {tab === 'signin' ? (
-        <SignInForm onSuccess={onClose} />
+        <SignInForm onSuccess={onClose} onAuthSuccess={onAuthSuccess} />
       ) : (
-        <SignUpForm onSuccess={onClose} />
+        <SignUpForm onSuccess={onClose} onAuthSuccess={onAuthSuccess} />
       )}
     </Drawer>
   );

@@ -7,11 +7,15 @@
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main",
+    "seed": "npx ts-node --project tsconfig.json prisma/seed.ts",
     "lint": "eslint src --ext .ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:e2e": "jest --config ./test/jest-e2e.json"
+  },
+  "prisma": {
+    "seed": "ts-node --project tsconfig.json prisma/seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",

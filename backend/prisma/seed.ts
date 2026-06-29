@@ -11,16 +11,16 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  const adminEmail = 'admin@example.com';
+  const adminEmail = 'admin@yopmail.com';
   const customerEmail = 'customer@example.com';
 
-  // Idempotent upsert for admin
+  // Idempotent upsert for admin — fixed credentials, never replaced by signup
   await prisma.user.upsert({
     where: { email: adminEmail },
     update: {},
     create: {
       email: adminEmail,
-      passwordHash: await bcrypt.hash('Admin1234!', 10),
+      passwordHash: await bcrypt.hash('Test123', 10),
       name: 'Admin User',
       role: Role.ADMIN,
     },
@@ -70,7 +70,7 @@ async function main() {
   });
 
   console.log('Seed complete.');
-  console.log('Admin:    admin@example.com / Admin1234!');
+  console.log('Admin:    admin@yopmail.com / Test123');
   console.log('Customer: customer@example.com / Customer1234!');
 }
 

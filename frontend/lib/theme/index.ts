@@ -171,7 +171,7 @@ const themeOptions: ThemeOptions = {
     },
     MuiDrawer: {
       styleOverrides: {
-        paper: { borderRight: 'none', background: '#0c0c0e' },
+        paper: { borderRight: 'none' },
       },
     },
     MuiAppBar: {

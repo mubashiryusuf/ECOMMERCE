@@ -61,6 +61,7 @@ export function Navbar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [pendingCart, setPendingCart] = useState(false);
 
   const handleAccountClick = (event: React.MouseEvent<HTMLElement>) => {
     if (isAuthenticated) {
@@ -200,7 +201,14 @@ export function Navbar() {
 
           {/* Cart */}
           <IconButton
-            onClick={() => setCartOpen(true)}
+            onClick={() => {
+              if (!isAuthenticated) {
+                setPendingCart(true);
+                setDrawerOpen(true);
+              } else {
+                setCartOpen(true);
+              }
+            }}
             sx={{
               position: 'relative',
               width: 44,
@@ -238,7 +246,19 @@ export function Navbar() {
         </Box>
 
         {/* Auth drawer (non-authenticated) */}
-        <AuthDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+        <AuthDrawer
+          open={drawerOpen}
+          onClose={() => {
+            setDrawerOpen(false);
+            if (!isAuthenticated) setPendingCart(false);
+          }}
+          onAuthSuccess={() => {
+            if (pendingCart) {
+              setPendingCart(false);
+              setCartOpen(true);
+            }
+          }}
+        />
 
         {/* Cart drawer */}
         <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
