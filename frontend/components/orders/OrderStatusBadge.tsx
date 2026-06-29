@@ -27,9 +27,12 @@ export function OrderStatusBadge({ status, size = 'small' }: OrderStatusBadgePro
       label={status}
       size={size}
       sx={{
+        fontFamily: '"Saira", sans-serif',
         fontWeight: 700,
         fontSize: size === 'small' ? '0.7rem' : '0.8rem',
         letterSpacing: '0.04em',
+        textTransform: 'uppercase',
+        borderRadius: '6px',
         ...style,
       }}
     />

@@ -20,14 +20,28 @@ export default function OrdersPage() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#f4f4f5' }}>
       <Navbar />
       <Box
         component="main"
-        sx={{ maxWidth: 900, mx: 'auto', px: { xs: 2, md: 3 }, py: 4 }}
+        sx={{ maxWidth: 1000, mx: 'auto', px: { xs: 2, md: 4 }, py: 4 }}
       >
-        <Typography variant="h4" sx={{ mb: 3, fontWeight: 800, color: 'primary.main' }}>
-          Order History
+        <Typography
+          component="h1"
+          sx={{
+            fontFamily: '"Saira Condensed", sans-serif',
+            fontWeight: 800,
+            fontStyle: 'italic',
+            textTransform: 'uppercase',
+            fontSize: '38px',
+            mb: '6px',
+            color: '#18181b',
+          }}
+        >
+          My Orders
+        </Typography>
+        <Typography sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '14px', color: '#71717a', mb: 3 }}>
+          Track and manage your purchases
         </Typography>
 
         {isLoading && <PageLoader />}

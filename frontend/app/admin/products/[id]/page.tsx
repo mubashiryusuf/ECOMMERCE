@@ -16,7 +16,17 @@ export default function AdminProductFormPage() {
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 720 }}>
-      <Typography variant="h4" sx={{ mb: 3, fontWeight: 800, color: 'text.primary' }}>
+      <Typography
+        sx={{
+          fontFamily: '"Saira Condensed", sans-serif',
+          fontWeight: 800,
+          fontStyle: 'italic',
+          textTransform: 'uppercase',
+          fontSize: '30px',
+          color: '#18181b',
+          mb: 3,
+        }}
+      >
         {isNew ? 'Add Product' : 'Edit Product'}
       </Typography>
       <ProductForm productId={isNew ? undefined : params?.id} />

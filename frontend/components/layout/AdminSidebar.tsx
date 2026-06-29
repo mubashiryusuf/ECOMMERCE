@@ -16,13 +16,12 @@ import {
   Dashboard,
   Inventory,
   ShoppingBag,
-  SportsSoccer,
   Logout,
 } from '@mui/icons-material';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
 
-const SIDEBAR_WIDTH = 260;
+const SIDEBAR_WIDTH = 230;
 
 const NAV_ITEMS = [
   { label: 'Dashboard', href: '/admin', icon: <Dashboard /> },
@@ -30,10 +29,6 @@ const NAV_ITEMS = [
   { label: 'Orders', href: '/admin/orders', icon: <ShoppingBag /> },
 ];
 
-/**
- * Persistent left sidebar for the admin panel.
- * Highlights the active route using Next.js usePathname().
- */
 export function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -53,37 +48,55 @@ export function AdminSidebar() {
         '& .MuiDrawer-paper': {
           width: SIDEBAR_WIDTH,
           boxSizing: 'border-box',
-          background: '#200E32',
+          background: '#0c0c0e',
           color: '#fff',
-          borderRight: 'none',
+          borderRight: '1px solid rgba(255,255,255,0.06)',
         },
       }}
     >
-      {/* Logo area */}
+      {/* Logo */}
       <Box
         sx={{
-          px: 3,
-          py: 2.5,
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
-          mb: 1,
+          px: 2,
+          py: 3,
+          borderBottom: '1px solid rgba(255,255,255,0.07)',
+          mb: 2,
           display: 'flex',
           alignItems: 'center',
-          gap: 1,
+          gap: '8px',
         }}
       >
-        <SportsSoccer sx={{ color: 'secondary.main', fontSize: 26 }} />
-        <Box>
-          <Typography variant="body1" fontWeight={800} sx={{ color: 'white', lineHeight: 1.2 }}>
-            Admin Panel
-          </Typography>
-          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>
-            SportsPlusStore
-          </Typography>
-        </Box>
+        <Box
+          sx={{
+            display: 'inline-block',
+            width: 26,
+            height: 26,
+            background: 'linear-gradient(135deg, #ff7a2e, #f2541c)',
+            clipPath: 'polygon(0 0, 100% 0, 68% 100%, 0% 100%)',
+            transform: 'skewX(-8deg)',
+            flexShrink: 0,
+          }}
+        />
+        <Typography
+          sx={{
+            fontFamily: '"Saira Condensed", sans-serif',
+            fontWeight: 800,
+            fontStyle: 'italic',
+            fontSize: '18px',
+            textTransform: 'uppercase',
+            color: '#fff',
+            letterSpacing: '0.02em',
+          }}
+        >
+          APEX{' '}
+          <Box component="span" sx={{ fontFamily: '"Manrope", sans-serif', fontStyle: 'normal', fontWeight: 600, fontSize: '11px', letterSpacing: '0.12em', color: '#71717a' }}>
+            ADMIN
+          </Box>
+        </Typography>
       </Box>
 
       {/* Navigation */}
-      <List sx={{ px: 1, flexGrow: 1 }}>
+      <List sx={{ px: 2, flexGrow: 1 }}>
         {NAV_ITEMS.map((item) => {
           const isActive =
             item.href === '/admin'
@@ -96,20 +109,21 @@ export function AdminSidebar() {
               component={NextLink}
               href={item.href}
               sx={{
-                borderRadius: 2,
-                mx: 0,
-                mb: 0.5,
-                color: isActive ? '#fff' : 'rgba(255,255,255,0.65)',
-                bgcolor: isActive ? 'rgba(46,204,113,0.15)' : 'transparent',
+                borderRadius: '10px',
+                mb: '4px',
+                py: '10px',
+                color: isActive ? '#fff' : 'rgba(255,255,255,0.5)',
+                bgcolor: isActive ? 'rgba(242,98,42,0.16)' : 'transparent',
+                borderLeft: isActive ? '3px solid #f2622a' : '3px solid transparent',
                 '&:hover': {
-                  bgcolor: isActive ? 'rgba(46,204,113,0.2)' : 'rgba(255,255,255,0.06)',
+                  bgcolor: isActive ? 'rgba(242,98,42,0.2)' : 'rgba(255,255,255,0.06)',
                   color: '#fff',
                 },
               }}
             >
               <ListItemIcon
                 sx={{
-                  color: isActive ? 'secondary.main' : 'rgba(255,255,255,0.5)',
+                  color: isActive ? '#f2622a' : 'rgba(255,255,255,0.4)',
                   minWidth: 36,
                 }}
               >
@@ -118,8 +132,11 @@ export function AdminSidebar() {
               <ListItemText
                 primary={item.label}
                 primaryTypographyProps={{
-                  fontSize: '0.9rem',
-                  fontWeight: isActive ? 700 : 400,
+                  fontFamily: '"Saira", sans-serif',
+                  fontSize: '13px',
+                  fontWeight: isActive ? 700 : 500,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
                 }}
               />
             </ListItemButton>
@@ -127,24 +144,30 @@ export function AdminSidebar() {
         })}
       </List>
 
-      <Divider sx={{ borderColor: 'rgba(255,255,255,0.08)', mx: 2 }} />
+      <Divider sx={{ borderColor: 'rgba(255,255,255,0.07)', mx: 2, mb: 1 }} />
 
       {/* Logout */}
-      <Box sx={{ px: 1, py: 1.5 }}>
+      <Box sx={{ px: 2, pb: 2 }}>
         <ListItemButton
           onClick={handleLogout}
           sx={{
-            borderRadius: 2,
-            color: 'rgba(255,255,255,0.5)',
-            '&:hover': { bgcolor: 'rgba(231,76,60,0.15)', color: '#E74C3C' },
+            borderRadius: '10px',
+            color: 'rgba(255,255,255,0.4)',
+            '&:hover': { bgcolor: 'rgba(230,57,70,0.14)', color: '#e63946' },
           }}
         >
           <ListItemIcon sx={{ color: 'inherit', minWidth: 36 }}>
             <Logout />
           </ListItemIcon>
           <ListItemText
-            primary="Sign out"
-            primaryTypographyProps={{ fontSize: '0.9rem' }}
+            primary="Sign Out"
+            primaryTypographyProps={{
+              fontFamily: '"Saira", sans-serif',
+              fontSize: '13px',
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+            }}
           />
         </ListItemButton>
       </Box>

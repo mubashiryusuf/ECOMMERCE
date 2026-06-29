@@ -8,8 +8,6 @@ import {
   Alert,
   TextField,
   MenuItem,
-  Chip,
-  Button,
 } from '@mui/material';
 import { Visibility } from '@mui/icons-material';
 import { adminApi } from '@/lib/api';
@@ -28,10 +26,6 @@ const STATUS_FILTER_OPTIONS = [
   { value: OrderStatus.CANCELLED, label: 'Cancelled' },
 ];
 
-/**
- * Admin orders list page.
- * Shows all orders across all users with status filter.
- */
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,7 +47,8 @@ export default function AdminOrdersPage() {
     : orders;
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 } }}>
+    <Box sx={{ p: { xs: 2, md: '28px 30px' } }}>
+      {/* Header */}
       <Box
         sx={{
           display: 'flex',
@@ -64,9 +59,25 @@ export default function AdminOrdersPage() {
           gap: 2,
         }}
       >
-        <Typography variant="h4" sx={{ fontWeight: 800, color: 'text.primary' }}>
-          Orders
-        </Typography>
+        <Box>
+          <Typography
+            sx={{
+              fontFamily: '"Saira Condensed", sans-serif',
+              fontWeight: 800,
+              fontStyle: 'italic',
+              textTransform: 'uppercase',
+              fontSize: '30px',
+              color: '#18181b',
+            }}
+          >
+            Orders
+          </Typography>
+          <Typography sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '13px', color: '#71717a', mt: '2px' }}>
+            {filteredOrders.length} order{filteredOrders.length !== 1 ? 's' : ''}
+            {statusFilter ? ` matching ${statusFilter.toLowerCase()}` : ' total'}
+          </Typography>
+        </Box>
+
         <TextField
           select
           label="Filter by status"
@@ -83,17 +94,16 @@ export default function AdminOrdersPage() {
         </TextField>
       </Box>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>{error}</Alert>}
 
       {isLoading ? (
         <PageLoader />
       ) : (
         <Box
           sx={{
-            bgcolor: 'background.paper',
-            borderRadius: 3,
-            border: '1px solid',
-            borderColor: 'divider',
+            background: '#fff',
+            borderRadius: '14px',
+            border: '1px solid #ededf0',
             overflow: 'hidden',
           }}
         >
@@ -101,19 +111,24 @@ export default function AdminOrdersPage() {
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: '1fr 180px 120px 120px 100px 100px',
-              px: 2,
-              py: 1.5,
-              bgcolor: '#F8F9FA',
-              borderBottom: '2px solid',
-              borderColor: 'divider',
+              gridTemplateColumns: '1fr 180px 120px 120px 110px 48px',
+              px: '20px',
+              py: '12px',
+              background: '#f7f7f8',
+              borderBottom: '1px solid #ededf0',
             }}
           >
-            {['Order ID', 'Customer', 'Date', 'Total', 'Items', 'Status'].map((col) => (
+            {['Order ID', 'Customer', 'Date', 'Total', 'Status', ''].map((col) => (
               <Typography
                 key={col}
-                variant="overline"
-                sx={{ fontWeight: 700, color: 'text.secondary', fontSize: '0.75rem' }}
+                sx={{
+                  fontFamily: '"Saira", sans-serif',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  fontSize: '11px',
+                  color: '#71717a',
+                }}
               >
                 {col}
               </Typography>
@@ -122,7 +137,7 @@ export default function AdminOrdersPage() {
 
           {filteredOrders.length === 0 && (
             <Box sx={{ py: 8, textAlign: 'center' }}>
-              <Typography variant="body2" color="text.secondary">
+              <Typography sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '14px', color: '#a1a1aa' }}>
                 No orders found.
               </Typography>
             </Box>
@@ -133,42 +148,56 @@ export default function AdminOrdersPage() {
               key={order.id}
               sx={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 180px 120px 120px 100px 100px',
-                px: 2,
-                py: 1.5,
+                gridTemplateColumns: '1fr 180px 120px 120px 110px 48px',
+                px: '20px',
+                py: '14px',
                 alignItems: 'center',
-                borderBottom: '1px solid',
-                borderColor: 'divider',
+                borderBottom: '1px solid #f0f0f1',
                 '&:last-child': { borderBottom: 'none' },
-                '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
+                '&:hover': { background: 'rgba(242,98,42,0.03)' },
               }}
             >
-              <Box>
-                <Button
-                  component={NextLink}
-                  href={`/admin/orders/${order.id}`}
-                  size="small"
-                  startIcon={<Visibility fontSize="small" />}
-                  sx={{ fontFamily: 'monospace', fontWeight: 700, textTransform: 'none' }}
-                >
-                  #{order.id.slice(-8).toUpperCase()}
-                </Button>
-              </Box>
-              <Typography variant="body2" color="text.secondary" noWrap>
+              <Typography
+                sx={{
+                  fontFamily: '"Saira Condensed", sans-serif',
+                  fontWeight: 800,
+                  fontStyle: 'italic',
+                  fontSize: '14px',
+                  color: '#f2622a',
+                }}
+              >
+                #{order.id.slice(-8).toUpperCase()}
+              </Typography>
+
+              <Typography sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '13px', color: '#52525b' }} noWrap>
                 {order.userId.slice(-8)}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+
+              <Typography sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '13px', color: '#71717a' }}>
                 {formatDate(order.createdAt)}
               </Typography>
-              <Typography variant="body2" fontWeight={700}>
+
+              <Typography sx={{ fontFamily: '"Saira", sans-serif', fontWeight: 700, fontSize: '14px', color: '#18181b' }}>
                 {formatPrice(order.totalCents)}
               </Typography>
-              <Chip
-                label={`${order.items?.length ?? 0} items`}
-                size="small"
-                sx={{ borderRadius: 1 }}
-              />
+
               <OrderStatusBadge status={order.status} />
+
+              <Box
+                component={NextLink}
+                href={`/admin/orders/${order.id}`}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#a1a1aa',
+                  '&:hover': { color: '#f2622a' },
+                  transition: 'color 0.15s ease',
+                }}
+                aria-label={`View order ${order.id}`}
+              >
+                <Visibility fontSize="small" />
+              </Box>
             </Box>
           ))}
         </Box>

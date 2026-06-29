@@ -17,9 +17,9 @@ interface ProductPageProps {
  */
 export default function ProductDetailPage({ params }: ProductPageProps) {
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#f4f4f5' }}>
       <Navbar />
-      <Box component="main" sx={{ maxWidth: 1400, mx: 'auto', px: { xs: 2, md: 3 }, py: 4 }}>
+      <Box component="main">
         <Suspense fallback={<PageLoader />}>
           <ProductDetailClient productId={params.id} />
         </Suspense>

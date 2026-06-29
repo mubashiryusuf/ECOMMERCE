@@ -1,14 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  Box,
-  Typography,
-  IconButton,
-  TextField,
-  CircularProgress,
-} from '@mui/material';
-import { Delete, Add, Remove } from '@mui/icons-material';
+import { Box, Typography, CircularProgress } from '@mui/material';
 import { useCart } from '@/lib/hooks/useCart';
 import { useSnackbar } from 'notistack';
 import { formatPrice } from '@/utils/formatters';
@@ -18,10 +11,6 @@ interface CartItemRowProps {
   item: CartItemType;
 }
 
-/**
- * Single cart item row.
- * Shows product image, name, price per unit, quantity selector, line total, and remove button.
- */
 export function CartItemRow({ item }: CartItemRowProps) {
   const { updateQuantity, removeItem } = useCart();
   const { enqueueSnackbar } = useSnackbar();
@@ -62,111 +51,167 @@ export function CartItemRow({ item }: CartItemRowProps) {
     <Box
       sx={{
         display: 'flex',
-        alignItems: 'center',
-        gap: 2,
-        py: 2,
+        gap: 2.5,
+        border: '1px solid #ededf0',
+        borderRadius: '16px',
+        padding: '16px',
+        background: '#fff',
         opacity: isUpdating ? 0.6 : 1,
         transition: 'opacity 0.2s',
       }}
     >
-      {/* Product image */}
+      {/* Image */}
       <Box
-        component="img"
-        src={item.product.imageUrl || 'https://placehold.co/80x80?text=No+Image'}
-        alt={item.product.name}
         sx={{
-          width: 80,
-          height: 80,
-          objectFit: 'cover',
-          borderRadius: 2,
+          width: 104,
+          height: 104,
+          background: '#f1f1f3',
+          borderRadius: '12px',
+          overflow: 'hidden',
           flexShrink: 0,
-          border: '1px solid',
-          borderColor: 'divider',
         }}
-        onError={(e) => {
-          (e.target as HTMLImageElement).src = 'https://placehold.co/80x80?text=No+Image';
-        }}
-      />
+      >
+        <Box
+          component="img"
+          src={item.product.imageUrl || 'https://placehold.co/104x104?text=No+Image'}
+          alt={item.product.name}
+          sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = 'https://placehold.co/104x104?text=No+Image';
+          }}
+        />
+      </Box>
 
-      {/* Product info */}
-      <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography
-          variant="body1"
-          fontWeight={600}
-          sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-        >
-          {item.product.name}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {formatPrice(item.product.priceCents)} each
-        </Typography>
-        {item.product.stockQuantity <= 5 && item.product.stockQuantity > 0 && (
-          <Typography variant="caption" color="warning.main">
-            Only {item.product.stockQuantity} left
+      {/* Info */}
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+          <Box>
+            <Typography
+              sx={{
+                fontFamily: '"Manrope", sans-serif',
+                fontSize: '11px',
+                fontWeight: 700,
+                color: '#a1a1aa',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+              }}
+            >
+              {item.product.category}
+            </Typography>
+            <Typography
+              sx={{
+                fontFamily: '"Manrope", sans-serif',
+                fontWeight: 700,
+                fontSize: '15px',
+                mt: '3px',
+                color: '#18181b',
+              }}
+            >
+              {item.product.name}
+            </Typography>
+            <Typography sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '12.5px', color: '#71717a' }}>
+              {formatPrice(item.product.priceCents)} each
+            </Typography>
+          </Box>
+          {/* Remove button */}
+          <Box
+            component="button"
+            onClick={handleRemove}
+            disabled={isUpdating}
+            sx={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: '#a1a1aa',
+              height: 'fit-content',
+              p: '4px',
+              borderRadius: '6px',
+              '&:hover': { color: '#e63946', background: '#fef2f2' },
+              transition: 'color 0.15s, background 0.15s',
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" />
+            </svg>
+          </Box>
+        </Box>
+
+        {/* Quantity + total */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mt: 'auto' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              border: '1.5px solid #e7e7ea',
+              borderRadius: '10px',
+              overflow: 'hidden',
+            }}
+          >
+            <Box
+              component="button"
+              onClick={() => handleQuantityChange(item.quantity - 1)}
+              disabled={isUpdating || item.quantity <= 1}
+              sx={{
+                width: 36,
+                height: 36,
+                border: 'none',
+                background: '#fff',
+                fontSize: '18px',
+                cursor: 'pointer',
+                '&:hover': { background: '#f4f4f5' },
+                '&:disabled': { color: '#a1a1aa', cursor: 'not-allowed' },
+              }}
+            >
+              −
+            </Box>
+            {isUpdating ? (
+              <Box sx={{ width: 34, display: 'flex', justifyContent: 'center' }}>
+                <CircularProgress size={14} sx={{ color: '#f2622a' }} />
+              </Box>
+            ) : (
+              <Box
+                sx={{
+                  width: 34,
+                  textAlign: 'center',
+                  fontFamily: '"Saira", sans-serif',
+                  fontWeight: 700,
+                  fontSize: '15px',
+                }}
+              >
+                {item.quantity}
+              </Box>
+            )}
+            <Box
+              component="button"
+              onClick={() => handleQuantityChange(item.quantity + 1)}
+              disabled={isUpdating || item.quantity >= item.product.stockQuantity}
+              sx={{
+                width: 36,
+                height: 36,
+                border: 'none',
+                background: '#fff',
+                fontSize: '18px',
+                cursor: 'pointer',
+                '&:hover': { background: '#f4f4f5' },
+                '&:disabled': { color: '#a1a1aa', cursor: 'not-allowed' },
+              }}
+            >
+              +
+            </Box>
+          </Box>
+
+          <Typography
+            sx={{
+              fontFamily: '"Saira", sans-serif',
+              fontWeight: 700,
+              fontSize: '20px',
+              color: '#18181b',
+            }}
+          >
+            {formatPrice(item.lineTotalCents)}
           </Typography>
-        )}
+        </Box>
       </Box>
-
-      {/* Quantity controls */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
-        <IconButton
-          size="small"
-          onClick={() => handleQuantityChange(item.quantity - 1)}
-          disabled={isUpdating || item.quantity <= 1}
-          aria-label="Decrease quantity"
-        >
-          <Remove fontSize="small" />
-        </IconButton>
-
-        {isUpdating ? (
-          <CircularProgress size={20} sx={{ mx: 1 }} />
-        ) : (
-          <TextField
-            value={item.quantity}
-            onChange={(e) => {
-              const v = Number(e.target.value);
-              if (v >= 1) handleQuantityChange(v);
-            }}
-            type="number"
-            size="small"
-            sx={{ width: 56 }}
-            inputProps={{
-              min: 1,
-              max: item.product.stockQuantity,
-              style: { textAlign: 'center', padding: '4px 8px' },
-            }}
-          />
-        )}
-
-        <IconButton
-          size="small"
-          onClick={() => handleQuantityChange(item.quantity + 1)}
-          disabled={isUpdating || item.quantity >= item.product.stockQuantity}
-          aria-label="Increase quantity"
-        >
-          <Add fontSize="small" />
-        </IconButton>
-      </Box>
-
-      {/* Line total */}
-      <Typography
-        variant="body1"
-        fontWeight={700}
-        sx={{ minWidth: 80, textAlign: 'right', flexShrink: 0 }}
-      >
-        {formatPrice(item.lineTotalCents)}
-      </Typography>
-
-      {/* Remove */}
-      <IconButton
-        onClick={handleRemove}
-        color="error"
-        size="small"
-        disabled={isUpdating}
-        aria-label={`Remove ${item.product.name}`}
-      >
-        <Delete />
-      </IconButton>
     </Box>
   );
 }

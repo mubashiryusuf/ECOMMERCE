@@ -3,6 +3,7 @@ import { Box } from '@mui/material';
 import { ProductGrid } from '@/components/catalog/ProductGrid';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { HeroSection } from '@/components/layout/HeroSection';
 import { PageLoader } from '@/components/ui/PageLoader';
 
 interface CatalogPageProps {
@@ -16,18 +17,62 @@ interface CatalogPageProps {
   };
 }
 
-/**
- * Storefront catalog page — server component.
- *
- * Reads filter state from URL query params (searchParams) and passes them
- * to ProductGrid. All filter interactions update the URL so state is
- * shareable/bookmarkable and handled via useSearchParams() on the client.
- */
 export default function CatalogPage({ searchParams }: CatalogPageProps) {
+  const hasFilters = !!(
+    searchParams.search ||
+    searchParams.category ||
+    searchParams.minPrice ||
+    searchParams.maxPrice ||
+    searchParams.sort
+  );
+
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#f4f4f5' }}>
       <Navbar />
-      <Box component="main" sx={{ maxWidth: 1400, mx: 'auto', px: { xs: 2, md: 3 }, py: 3 }}>
+
+      {/* Hero — only on unfiltered home */}
+      {!hasFilters && !searchParams.page && <HeroSection />}
+
+      {/* Catalog section */}
+      <Box
+        sx={{
+          maxWidth: 1320,
+          mx: 'auto',
+          px: { xs: 2, md: 4 },
+          py: { xs: 3, md: 5 },
+        }}
+      >
+        {/* Section heading */}
+        {!hasFilters && (
+          <Box sx={{ textAlign: 'center', mb: 5 }}>
+            <Box
+              component="h2"
+              sx={{
+                fontFamily: '"Saira Condensed", sans-serif',
+                fontWeight: 800,
+                fontStyle: 'italic',
+                textTransform: 'uppercase',
+                fontSize: '34px',
+                m: 0,
+                letterSpacing: '0.02em',
+                color: '#18181b',
+              }}
+            >
+              Top Trending
+            </Box>
+            <Box
+              sx={{
+                width: 54,
+                height: 4,
+                background: '#f2622a',
+                borderRadius: 1,
+                mx: 'auto',
+                mt: '10px',
+              }}
+            />
+          </Box>
+        )}
+
         <Suspense fallback={<PageLoader />}>
           <ProductGrid
             initialSearch={searchParams.search}
@@ -39,6 +84,7 @@ export default function CatalogPage({ searchParams }: CatalogPageProps) {
           />
         </Suspense>
       </Box>
+
       <Footer />
     </Box>
   );

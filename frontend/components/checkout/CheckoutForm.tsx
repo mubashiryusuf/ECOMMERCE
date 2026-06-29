@@ -3,7 +3,6 @@
 import {
   Box,
   Typography,
-  Button,
   CircularProgress,
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
@@ -12,9 +11,6 @@ import { z } from 'zod';
 import { Input } from '@/components/ui/Input';
 import type { CheckoutPayload } from '@/types';
 
-// ---------------------------------------------------------------------------
-// Zod schema — shipping information
-// ---------------------------------------------------------------------------
 const shippingSchema = z.object({
   name: z.string().min(2, 'Full name is required'),
   addressLine1: z.string().min(5, 'Address is required'),
@@ -30,10 +26,6 @@ interface CheckoutFormProps {
   onNext: (data: Omit<CheckoutPayload, 'paymentToken'>) => void;
 }
 
-/**
- * Step 1 of checkout: Shipping information form.
- * Validated with Zod + react-hook-form before advancing to payment step.
- */
 export function CheckoutForm({ defaultValues, onNext }: CheckoutFormProps) {
   const {
     control,
@@ -56,7 +48,17 @@ export function CheckoutForm({ defaultValues, onNext }: CheckoutFormProps) {
 
   return (
     <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
-      <Typography variant="h6" fontWeight={700} mb={2}>
+      <Typography
+        sx={{
+          fontFamily: '"Saira", sans-serif',
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          letterSpacing: '0.04em',
+          fontSize: '13px',
+          color: '#71717a',
+          mb: '20px',
+        }}
+      >
         Shipping Information
       </Typography>
 
@@ -139,15 +141,35 @@ export function CheckoutForm({ defaultValues, onNext }: CheckoutFormProps) {
           )}
         />
 
-        <Button
+        <Box
+          component="button"
           type="submit"
-          variant="contained"
-          size="large"
           disabled={isSubmitting}
-          sx={{ mt: 1 }}
+          sx={{
+            mt: 1,
+            width: '100%',
+            height: 54,
+            border: 'none',
+            borderRadius: '12px',
+            background: '#f2622a',
+            color: '#fff',
+            fontFamily: '"Saira", sans-serif',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            fontSize: '15px',
+            cursor: isSubmitting ? 'not-allowed' : 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            transition: 'background 0.2s ease',
+            '&:hover:not(:disabled)': { background: '#d94e18' },
+            '&:disabled': { background: '#e7e7ea', color: '#a1a1aa' },
+          }}
         >
-          {isSubmitting ? <CircularProgress size={22} color="inherit" /> : 'Continue to Payment'}
-        </Button>
+          {isSubmitting ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : 'Continue to Payment'}
+        </Box>
       </Box>
     </Box>
   );

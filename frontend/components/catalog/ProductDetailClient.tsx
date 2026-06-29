@@ -2,18 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import NextLink from 'next/link';
-import {
-  Box,
-  Typography,
-  Button,
-  Chip,
-  Divider,
-  Alert,
-  Grid,
-  IconButton,
-  CircularProgress,
-} from '@mui/material';
-import { Add, Remove, ShoppingCart, ArrowBack } from '@mui/icons-material';
+import { Box, Typography, Alert, Grid, CircularProgress } from '@mui/material';
 import { productsApi } from '@/lib/api';
 import { useCart } from '@/lib/hooks/useCart';
 import { useAuth } from '@/lib/hooks/useAuth';
@@ -28,15 +17,6 @@ interface ProductDetailClientProps {
   productId: string;
 }
 
-/**
- * Product Detail Page — client component.
- *
- * Handles:
- * - Fetching product by ID
- * - Quantity selector (1 to stockQuantity)
- * - Add to cart action
- * - Related products section (same category, from /products/:id/related)
- */
 export function ProductDetailClient({ productId }: ProductDetailClientProps) {
   const [product, setProduct] = useState<Product | null>(null);
   const [related, setRelated] = useState<Product[]>([]);
@@ -52,10 +32,7 @@ export function ProductDetailClient({ productId }: ProductDetailClientProps) {
 
   useEffect(() => {
     setIsLoading(true);
-    Promise.all([
-      productsApi.getById(productId),
-      productsApi.getRelated(productId),
-    ])
+    Promise.all([productsApi.getById(productId), productsApi.getRelated(productId)])
       .then(([prod, rel]) => {
         setProduct(prod);
         setRelated(rel);
@@ -95,29 +72,41 @@ export function ProductDetailClient({ productId }: ProductDetailClientProps) {
   const maxQty = Math.min(product.stockQuantity, 10);
 
   return (
-    <Box>
-      <Button
-        component={NextLink}
-        href="/"
-        startIcon={<ArrowBack />}
-        variant="text"
-        sx={{ mb: 2 }}
+    <Box sx={{ maxWidth: 1320, mx: 'auto', px: { xs: 2, md: 4 }, py: { xs: 3, md: 4 } }}>
+      {/* Breadcrumb */}
+      <Box
+        sx={{
+          fontFamily: '"Manrope", sans-serif',
+          fontSize: '12.5px',
+          color: '#a1a1aa',
+          mb: 3,
+          display: 'flex',
+          gap: 1,
+          alignItems: 'center',
+        }}
       >
-        Back to catalog
-      </Button>
+        <Box component={NextLink} href="/" sx={{ color: '#f2622a', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
+          Home
+        </Box>
+        <span>/</span>
+        <Box component={NextLink} href={`/?category=${product.category}`} sx={{ color: '#a1a1aa', textDecoration: 'none', '&:hover': { color: '#f2622a' } }}>
+          {product.category}
+        </Box>
+        <span>/</span>
+        <span style={{ color: '#18181b', fontWeight: 600 }}>{product.name}</span>
+      </Box>
 
-      <Grid container spacing={4}>
-        {/* Product image */}
-        <Grid item xs={12} md={5}>
+      <Grid container spacing={5}>
+        {/* Image */}
+        <Grid item xs={12} md={6}>
           <Box
             sx={{
               position: 'relative',
               aspectRatio: '1',
-              borderRadius: 3,
+              borderRadius: '20px',
               overflow: 'hidden',
-              bgcolor: '#F8F9FA',
-              border: '1px solid',
-              borderColor: 'divider',
+              background: '#f1f1f3',
+              border: '1px solid #ededf0',
             }}
           >
             <Box
@@ -133,126 +122,256 @@ export function ProductDetailClient({ productId }: ProductDetailClientProps) {
               <Box
                 sx={{
                   position: 'absolute',
-                  inset: 0,
-                  bgcolor: 'rgba(0,0,0,0.45)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  top: 16,
+                  left: 16,
+                  background: 'rgba(16,16,18,0.85)',
+                  color: '#fff',
+                  fontFamily: '"Saira", sans-serif',
+                  fontWeight: 700,
+                  fontSize: '12px',
+                  letterSpacing: '0.04em',
+                  textTransform: 'uppercase',
+                  padding: '6px 14px',
+                  borderRadius: '8px',
                 }}
               >
-                <Chip
-                  label="Out of Stock"
-                  sx={{ bgcolor: 'error.main', color: '#fff', fontWeight: 700, fontSize: '1rem' }}
-                />
+                Out of Stock
               </Box>
             )}
           </Box>
         </Grid>
 
-        {/* Product info */}
-        <Grid item xs={12} md={7}>
-          <Chip label={product.category} size="small" sx={{ mb: 1.5 }} />
-          <Typography variant="h3" sx={{ mb: 1, fontWeight: 800, color: 'primary.main' }}>
+        {/* Info */}
+        <Grid item xs={12} md={6}>
+          <Box
+            sx={{
+              fontFamily: '"Manrope", sans-serif',
+              fontSize: '12px',
+              fontWeight: 700,
+              color: '#f2622a',
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              mb: 1,
+            }}
+          >
+            {product.category}
+          </Box>
+
+          <Typography
+            component="h1"
+            sx={{
+              fontFamily: '"Saira Condensed", sans-serif',
+              fontWeight: 800,
+              fontStyle: 'italic',
+              textTransform: 'uppercase',
+              fontSize: { xs: '32px', md: '44px' },
+              lineHeight: 0.96,
+              mb: 2,
+              color: '#18181b',
+            }}
+          >
             {product.name}
           </Typography>
-          <Typography variant="h4" sx={{ mb: 2, fontWeight: 800, color: 'secondary.dark' }}>
-            {formatPrice(product.priceCents)}
-          </Typography>
 
-          <Divider sx={{ mb: 2 }} />
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 2, mb: 3 }}>
+            <Typography
+              sx={{
+                fontFamily: '"Saira", sans-serif',
+                fontWeight: 700,
+                fontSize: '32px',
+                color: '#18181b',
+              }}
+            >
+              {formatPrice(product.priceCents)}
+            </Typography>
+          </Box>
 
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 3, lineHeight: 1.7 }}>
+          <Typography
+            sx={{
+              fontFamily: '"Manrope", sans-serif',
+              fontSize: '14.5px',
+              lineHeight: 1.65,
+              color: '#52525b',
+              mb: 3,
+            }}
+          >
             {product.description}
           </Typography>
 
-          {/* Stock */}
-          <Typography
-            variant="body2"
+          {/* Stock status */}
+          <Box
             sx={{
-              mb: 2,
-              color:
-                product.stockQuantity === 0
-                  ? 'error.main'
-                  : product.stockQuantity <= 5
-                  ? 'warning.main'
-                  : 'success.main',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              fontFamily: '"Manrope", sans-serif',
+              fontSize: '13px',
               fontWeight: 600,
+              mb: 3,
+              color: isOutOfStock ? '#e63946' : product.stockQuantity <= 5 ? '#f59e0b' : '#16a34a',
             }}
           >
-            {product.stockQuantity === 0
+            <Box
+              sx={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: isOutOfStock ? '#e63946' : product.stockQuantity <= 5 ? '#f59e0b' : '#16a34a',
+              }}
+            />
+            {isOutOfStock
               ? 'Out of stock'
               : product.stockQuantity <= 5
               ? `Only ${product.stockQuantity} left in stock`
-              : `${product.stockQuantity} in stock`}
-          </Typography>
+              : `${product.stockQuantity} in stock · Free shipping over $200`}
+          </Box>
 
           {/* Quantity selector */}
           {!isOutOfStock && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-              <Typography variant="body2" fontWeight={600}>
-                Quantity:
-              </Typography>
+            <Box sx={{ mb: 3 }}>
               <Box
                 sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  borderRadius: 2,
-                  overflow: 'hidden',
+                  fontFamily: '"Saira", sans-serif',
+                  fontWeight: 700,
+                  fontSize: '12px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                  mb: '10px',
+                  color: '#18181b',
                 }}
               >
-                <IconButton
-                  size="small"
-                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  disabled={quantity <= 1}
-                  sx={{ borderRadius: 0 }}
+                Quantity
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    border: '1.5px solid #e7e7ea',
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                  }}
                 >
-                  <Remove fontSize="small" />
-                </IconButton>
-                <Typography sx={{ px: 2, fontWeight: 700, minWidth: 32, textAlign: 'center' }}>
-                  {quantity}
-                </Typography>
-                <IconButton
-                  size="small"
-                  onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
-                  disabled={quantity >= maxQty}
-                  sx={{ borderRadius: 0 }}
-                >
-                  <Add fontSize="small" />
-                </IconButton>
+                  <Box
+                    component="button"
+                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                    disabled={quantity <= 1}
+                    sx={{
+                      width: 46,
+                      height: 52,
+                      border: 'none',
+                      background: '#fff',
+                      fontSize: '22px',
+                      cursor: 'pointer',
+                      color: '#18181b',
+                      '&:hover': { background: '#f4f4f5' },
+                      '&:disabled': { color: '#a1a1aa', cursor: 'not-allowed' },
+                    }}
+                  >
+                    −
+                  </Box>
+                  <Box
+                    sx={{
+                      width: 44,
+                      textAlign: 'center',
+                      fontFamily: '"Saira", sans-serif',
+                      fontWeight: 700,
+                      fontSize: '17px',
+                    }}
+                  >
+                    {quantity}
+                  </Box>
+                  <Box
+                    component="button"
+                    onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
+                    disabled={quantity >= maxQty}
+                    sx={{
+                      width: 46,
+                      height: 52,
+                      border: 'none',
+                      background: '#fff',
+                      fontSize: '22px',
+                      cursor: 'pointer',
+                      color: '#18181b',
+                      '&:hover': { background: '#f4f4f5' },
+                      '&:disabled': { color: '#a1a1aa', cursor: 'not-allowed' },
+                    }}
+                  >
+                    +
+                  </Box>
+                </Box>
               </Box>
             </Box>
           )}
 
-          <Button
-            variant="contained"
-            size="large"
-            startIcon={isAdding ? <CircularProgress size={18} color="inherit" /> : <ShoppingCart />}
-            disabled={isOutOfStock || isAdding}
+          {/* Add to cart */}
+          <Box
+            component="button"
             onClick={handleAddToCart}
-            sx={{ minWidth: 200 }}
+            disabled={isOutOfStock || isAdding}
+            sx={{
+              width: '100%',
+              height: 54,
+              border: 'none',
+              borderRadius: '12px',
+              background: isOutOfStock ? '#e7e7ea' : '#f2622a',
+              color: isOutOfStock ? '#a1a1aa' : '#fff',
+              fontFamily: '"Saira", sans-serif',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              fontSize: '15px',
+              cursor: isOutOfStock ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px',
+              transition: 'transform 0.12s ease, background 0.2s ease',
+              '&:hover:not(:disabled)': { background: '#d94e18' },
+              '&:active:not(:disabled)': { transform: 'scale(0.97)' },
+            }}
           >
-            {isOutOfStock ? 'Out of Stock' : isAdding ? 'Adding…' : 'Add to Cart'}
-          </Button>
+            {isAdding ? (
+              <CircularProgress size={20} sx={{ color: '#fff' }} />
+            ) : (
+              <>
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M6 6h15l-1.5 9h-12z" />
+                  <circle cx="9" cy="20" r="1.6" />
+                  <circle cx="18" cy="20" r="1.6" />
+                  <path d="M6 6 5 2H2" />
+                </svg>
+                {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+              </>
+            )}
+          </Box>
         </Grid>
       </Grid>
 
       {/* Related products */}
       {related.length > 0 && (
-        <Box sx={{ mt: 6 }}>
-          <Typography variant="h5" sx={{ mb: 3, fontWeight: 700 }}>
-            Related Products
-          </Typography>
+        <Box sx={{ mt: 7 }}>
+          <Box sx={{ mb: 4 }}>
+            <Typography
+              sx={{
+                fontFamily: '"Saira Condensed", sans-serif',
+                fontWeight: 800,
+                fontStyle: 'italic',
+                textTransform: 'uppercase',
+                fontSize: '28px',
+                m: 0,
+                color: '#18181b',
+              }}
+            >
+              You May Also Like
+            </Typography>
+            <Box sx={{ width: 54, height: 4, background: '#f2622a', borderRadius: 1, mt: '10px' }} />
+          </Box>
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: {
-                xs: 'repeat(2, 1fr)',
-                sm: 'repeat(3, 1fr)',
-                md: 'repeat(4, 1fr)',
-              },
-              gap: 2,
+              gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)', md: 'repeat(4, 1fr)' },
+              gap: 2.5,
             }}
           >
             {related.slice(0, 4).map((p) => (

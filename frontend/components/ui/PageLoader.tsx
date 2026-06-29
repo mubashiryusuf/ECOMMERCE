@@ -14,7 +14,7 @@ export function PageLoader() {
         minHeight: '40vh',
       }}
     >
-      <CircularProgress color="primary" size={48} thickness={4} />
+      <CircularProgress size={48} thickness={4} sx={{ color: '#f2622a' }} />
     </Box>
   );
 }

@@ -5,7 +5,6 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import {
   Box,
   Typography,
-  Grid,
   Skeleton,
   Alert,
   Pagination,
@@ -221,24 +220,20 @@ export function ProductGrid({
 
         {/* Skeleton loading */}
         {isLoading && (
-          <Grid container spacing={3}>
-            {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
-              <Grid item xs={12} sm={6} lg={4} key={i}>
-                <Skeleton variant="rectangular" height={340} sx={{ borderRadius: 2 }} />
-              </Grid>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2,1fr)', sm: 'repeat(3,1fr)', lg: 'repeat(4,1fr)' }, gap: 2.5 }}>
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Skeleton key={i} variant="rectangular" height={320} sx={{ borderRadius: '16px' }} />
             ))}
-          </Grid>
+          </Box>
         )}
 
         {/* Products */}
         {!isLoading && data && data.items.length > 0 && (
-          <Grid container spacing={3}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2,1fr)', sm: 'repeat(3,1fr)', lg: 'repeat(4,1fr)' }, gap: 2.5 }}>
             {data.items.map((product) => (
-              <Grid item xs={12} sm={6} lg={4} key={product.id}>
-                <ProductCard product={product} />
-              </Grid>
+              <ProductCard key={product.id} product={product} />
             ))}
-          </Grid>
+          </Box>
         )}
 
         {/* Empty state */}

@@ -3,10 +3,6 @@
 import {
   Box,
   Typography,
-  Button,
-  Alert,
-  Paper,
-  Stack,
   CircularProgress,
 } from '@mui/material';
 import { Lock, CreditCard, ArrowBack } from '@mui/icons-material';
@@ -19,71 +15,141 @@ interface PaymentStepProps {
 
 /**
  * Step 2 of checkout: Mock payment confirmation.
- *
- * MOCK: No real payment is processed. This step simulates a successful payment
- * to satisfy the assessment requirement. In production this would render
- * Stripe Elements or a similar secure payment form.
- *
- * The mock is clearly communicated to the user via warning banners.
+ * MOCK: No real payment is processed. Simulates a successful payment for the assessment.
  */
 export function PaymentStep({ onConfirm, onBack, isSubmitting }: PaymentStepProps) {
   return (
     <Box>
-      <Typography variant="h6" fontWeight={700} mb={2}>
+      <Typography
+        sx={{
+          fontFamily: '"Saira", sans-serif',
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          letterSpacing: '0.04em',
+          fontSize: '13px',
+          color: '#71717a',
+          mb: '20px',
+        }}
+      >
         Payment
       </Typography>
 
-      <Alert severity="warning" icon={<Lock />} sx={{ mb: 3 }}>
-        <Typography variant="body2" fontWeight={700}>
-          Test Environment — No Real Payment
-        </Typography>
-        <Typography variant="body2">
-          This is a mock checkout. No card details are collected, no charges will be made.
-          Clicking &ldquo;Place Order&rdquo; simulates a successful payment.
-        </Typography>
-      </Alert>
-
-      <Paper
-        elevation={0}
+      {/* Mock payment notice */}
+      <Box
         sx={{
-          p: 3,
-          border: '2px dashed',
-          borderColor: 'divider',
-          borderRadius: 3,
+          display: 'flex',
+          gap: '14px',
+          alignItems: 'flex-start',
+          background: 'rgba(245,158,11,0.08)',
+          border: '1px solid rgba(245,158,11,0.3)',
+          borderRadius: '12px',
+          p: '16px 20px',
           mb: 3,
-          textAlign: 'center',
         }}
       >
-        <CreditCard sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
-        <Typography variant="body1" color="text.secondary" fontWeight={500}>
+        <Lock sx={{ color: '#f59e0b', mt: '2px', flexShrink: 0 }} />
+        <Box>
+          <Typography
+            sx={{ fontFamily: '"Saira", sans-serif', fontWeight: 700, fontSize: '13px', color: '#92400E', textTransform: 'uppercase', letterSpacing: '0.04em', mb: '4px' }}
+          >
+            Test Environment — No Real Payment
+          </Typography>
+          <Typography sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '13px', color: '#92400E', lineHeight: 1.6 }}>
+            This is a mock checkout. No card details are collected, no charges will be made.
+            Clicking &ldquo;Place Order&rdquo; simulates a successful payment.
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* Mock gateway box */}
+      <Box
+        sx={{
+          p: '28px',
+          border: '2px dashed #ededf0',
+          borderRadius: '14px',
+          mb: 3,
+          textAlign: 'center',
+          background: '#fafafa',
+        }}
+      >
+        <CreditCard sx={{ fontSize: 52, color: '#d1d1d6', mb: '10px' }} />
+        <Typography
+          sx={{ fontFamily: '"Saira", sans-serif', fontWeight: 700, fontSize: '14px', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#71717a' }}
+        >
           Mock Payment Gateway
         </Typography>
-        <Typography variant="body2" color="text.disabled" mt={0.5}>
+        <Typography sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '13px', color: '#a1a1aa', mt: '6px' }}>
           In production: Stripe, PayPal, or similar would appear here
         </Typography>
-      </Paper>
+      </Box>
 
-      <Stack direction="row" spacing={2}>
-        <Button
-          variant="outlined"
+      {/* Actions */}
+      <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box
+          component="button"
+          type="button"
           onClick={onBack}
-          startIcon={<ArrowBack />}
           disabled={isSubmitting}
+          sx={{
+            height: 54,
+            px: '24px',
+            border: '1.5px solid #ededf0',
+            borderRadius: '12px',
+            background: 'transparent',
+            color: '#52525b',
+            fontFamily: '"Saira", sans-serif',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            fontSize: '14px',
+            cursor: isSubmitting ? 'not-allowed' : 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            flexShrink: 0,
+            transition: 'border-color 0.2s ease',
+            '&:hover:not(:disabled)': { borderColor: '#a1a1aa' },
+          }}
         >
+          <ArrowBack sx={{ fontSize: 18 }} />
           Back
-        </Button>
+        </Box>
 
-        <Button
-          variant="contained"
-          size="large"
+        <Box
+          component="button"
+          type="button"
           onClick={onConfirm}
           disabled={isSubmitting}
-          startIcon={isSubmitting ? <CircularProgress size={18} color="inherit" /> : <Lock />}
-          sx={{ flex: 1 }}
+          sx={{
+            flex: 1,
+            height: 54,
+            border: 'none',
+            borderRadius: '12px',
+            background: '#f2622a',
+            color: '#fff',
+            fontFamily: '"Saira", sans-serif',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            fontSize: '15px',
+            cursor: isSubmitting ? 'not-allowed' : 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            transition: 'background 0.2s ease',
+            '&:hover:not(:disabled)': { background: '#d94e18' },
+            '&:disabled': { background: '#e7e7ea', color: '#a1a1aa' },
+          }}
         >
+          {isSubmitting ? (
+            <CircularProgress size={20} sx={{ color: '#fff' }} />
+          ) : (
+            <Lock sx={{ fontSize: 18 }} />
+          )}
           {isSubmitting ? 'Placing Order…' : 'Place Order (Mock)'}
-        </Button>
-      </Stack>
+        </Box>
+      </Box>
     </Box>
   );
 }

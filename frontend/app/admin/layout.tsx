@@ -58,7 +58,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#f7f7f8' }}>
       <AdminSidebar />
       <Box
         component="main"

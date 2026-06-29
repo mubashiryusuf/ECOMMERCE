@@ -1,5 +1,5 @@
 import NextLink from 'next/link';
-import { Box, Typography, Chip } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { Visibility } from '@mui/icons-material';
 import { OrderStatusBadge } from '@/components/orders/OrderStatusBadge';
 import { formatPrice, formatDate } from '@/utils/formatters';
@@ -10,15 +10,11 @@ interface OrderTableProps {
   basePath?: string;
 }
 
-/**
- * Tabular list of orders for the admin panel.
- * Each row links to the order detail / status-update page.
- */
 export function OrderTable({ orders, basePath = '/admin/orders' }: OrderTableProps) {
   if (orders.length === 0) {
     return (
       <Box sx={{ textAlign: 'center', py: 8 }}>
-        <Typography variant="body2" color="text.secondary">
+        <Typography sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '14px', color: '#a1a1aa' }}>
           No orders found.
         </Typography>
       </Box>
@@ -28,10 +24,9 @@ export function OrderTable({ orders, basePath = '/admin/orders' }: OrderTablePro
   return (
     <Box
       sx={{
-        bgcolor: 'background.paper',
-        borderRadius: 3,
-        border: '1px solid',
-        borderColor: 'divider',
+        background: '#fff',
+        borderRadius: '14px',
+        border: '1px solid #ededf0',
         overflow: 'hidden',
       }}
     >
@@ -39,19 +34,24 @@ export function OrderTable({ orders, basePath = '/admin/orders' }: OrderTablePro
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: '160px 1fr 120px 120px 80px 48px',
-          px: 2,
-          py: 1.5,
-          bgcolor: '#F8F9FA',
-          borderBottom: '2px solid',
-          borderColor: 'divider',
+          gridTemplateColumns: '160px 1fr 120px 120px 100px 48px',
+          px: '20px',
+          py: '12px',
+          background: '#f7f7f8',
+          borderBottom: '1px solid #ededf0',
         }}
       >
         {['Order ID', 'Customer', 'Date', 'Total', 'Status', ''].map((col) => (
           <Typography
             key={col}
-            variant="overline"
-            sx={{ fontWeight: 700, color: 'text.secondary', fontSize: '0.7rem' }}
+            sx={{
+              fontFamily: '"Saira", sans-serif',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              fontSize: '11px',
+              color: '#71717a',
+            }}
           >
             {col}
           </Typography>
@@ -64,39 +64,42 @@ export function OrderTable({ orders, basePath = '/admin/orders' }: OrderTablePro
           key={order.id}
           sx={{
             display: 'grid',
-            gridTemplateColumns: '160px 1fr 120px 120px 80px 48px',
-            px: 2,
-            py: 1.5,
+            gridTemplateColumns: '160px 1fr 120px 120px 100px 48px',
+            px: '20px',
+            py: '14px',
             alignItems: 'center',
-            borderBottom: '1px solid',
-            borderColor: 'divider',
+            borderBottom: '1px solid #f0f0f1',
             '&:last-child': { borderBottom: 'none' },
-            '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
+            '&:hover': { background: 'rgba(242,98,42,0.03)' },
             transition: 'background 0.1s ease',
           }}
         >
           <Typography
-            variant="body2"
-            fontWeight={700}
-            sx={{ fontFamily: 'monospace', color: 'primary.main' }}
+            sx={{
+              fontFamily: '"Saira Condensed", sans-serif',
+              fontWeight: 800,
+              fontStyle: 'italic',
+              fontSize: '14px',
+              color: '#f2622a',
+            }}
           >
             #{order.id.slice(-8).toUpperCase()}
           </Typography>
 
           <Box>
-            <Typography variant="body2" fontWeight={500} noWrap>
+            <Typography sx={{ fontFamily: '"Manrope", sans-serif', fontWeight: 600, fontSize: '13.5px', color: '#18181b' }} noWrap>
               {order.name}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '12px', color: '#a1a1aa' }}>
               {order.items?.length ?? 0} item{(order.items?.length ?? 0) !== 1 ? 's' : ''}
             </Typography>
           </Box>
 
-          <Typography variant="body2" color="text.secondary">
+          <Typography sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '13px', color: '#71717a' }}>
             {formatDate(order.createdAt)}
           </Typography>
 
-          <Typography variant="body2" fontWeight={700}>
+          <Typography sx={{ fontFamily: '"Saira", sans-serif', fontWeight: 700, fontSize: '14px', color: '#18181b' }}>
             {formatPrice(order.totalCents)}
           </Typography>
 
@@ -109,8 +112,9 @@ export function OrderTable({ orders, basePath = '/admin/orders' }: OrderTablePro
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: 'text.secondary',
-              '&:hover': { color: 'primary.main' },
+              color: '#a1a1aa',
+              '&:hover': { color: '#f2622a' },
+              transition: 'color 0.15s ease',
             }}
             aria-label={`View order ${order.id}`}
           >

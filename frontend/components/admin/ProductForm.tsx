@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import {
   Box,
   Typography,
-  Button,
   Alert,
   CircularProgress,
   InputAdornment,
@@ -18,11 +17,6 @@ import { Input } from '@/components/ui/Input';
 import { adminApi, productsApi } from '@/lib/api';
 import type { Product } from '@/types';
 
-// ---------------------------------------------------------------------------
-// Validation schema
-// All prices are submitted in CENTS (integers).
-// The user enters dollars; we convert before sending.
-// ---------------------------------------------------------------------------
 const productSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   description: z.string().min(10, 'Description must be at least 10 characters'),
@@ -41,17 +35,9 @@ const productSchema = z.object({
 type ProductFormValues = z.infer<typeof productSchema>;
 
 interface ProductFormProps {
-  productId?: string; // undefined = create mode
+  productId?: string;
 }
 
-/**
- * Admin product create/edit form.
- *
- * - Create mode: empty form, POST /admin/products on submit
- * - Edit mode: pre-fills from existing product, PATCH /admin/products/:id on submit
- *
- * Price is displayed/entered in dollars but stored/sent in cents.
- */
 export function ProductForm({ productId }: ProductFormProps) {
   const router = useRouter();
   const { enqueueSnackbar } = useSnackbar();
@@ -77,7 +63,6 @@ export function ProductForm({ productId }: ProductFormProps) {
     },
   });
 
-  // Load product for edit mode
   useEffect(() => {
     if (!productId) return;
     productsApi
@@ -102,7 +87,7 @@ export function ProductForm({ productId }: ProductFormProps) {
     const payload = {
       name: values.name,
       description: values.description,
-      priceCents: Math.round(values.priceDollars * 100), // dollars → cents
+      priceCents: Math.round(values.priceDollars * 100),
       category: values.category,
       imageUrl: values.imageUrl,
       stockQuantity: values.stockQuantity,
@@ -126,7 +111,7 @@ export function ProductForm({ productId }: ProductFormProps) {
   };
 
   if (loadError) {
-    return <Alert severity="error">{loadError}</Alert>;
+    return <Alert severity="error" sx={{ borderRadius: '12px' }}>{loadError}</Alert>;
   }
 
   return (
@@ -137,7 +122,7 @@ export function ProductForm({ productId }: ProductFormProps) {
       sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}
     >
       {submitError && (
-        <Alert severity="error" onClose={() => setSubmitError(null)}>
+        <Alert severity="error" sx={{ borderRadius: '12px' }} onClose={() => setSubmitError(null)}>
           {submitError}
         </Alert>
       )}
@@ -249,7 +234,9 @@ export function ProductForm({ productId }: ProductFormProps) {
         render={({ field: { value } }) =>
           value ? (
             <Box>
-              <Typography variant="caption" color="text.secondary" mb={0.5} display="block">
+              <Typography
+                sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '12px', color: '#71717a', mb: '6px' }}
+              >
                 Image preview
               </Typography>
               <Box
@@ -260,9 +247,8 @@ export function ProductForm({ productId }: ProductFormProps) {
                   height: 120,
                   width: 120,
                   objectFit: 'cover',
-                  borderRadius: 2,
-                  border: '1px solid',
-                  borderColor: 'divider',
+                  borderRadius: '10px',
+                  border: '1px solid #ededf0',
                 }}
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none';
@@ -274,27 +260,59 @@ export function ProductForm({ productId }: ProductFormProps) {
       />
 
       <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
-        <Button
+        <Box
+          component="button"
           type="submit"
-          variant="contained"
-          size="large"
           disabled={isSubmitting}
-          startIcon={isSubmitting ? <CircularProgress size={18} color="inherit" /> : undefined}
+          sx={{
+            height: 54,
+            px: '28px',
+            border: 'none',
+            borderRadius: '12px',
+            background: '#f2622a',
+            color: '#fff',
+            fontFamily: '"Saira", sans-serif',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            fontSize: '14px',
+            cursor: isSubmitting ? 'not-allowed' : 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'background 0.2s ease',
+            '&:hover:not(:disabled)': { background: '#d94e18' },
+            '&:disabled': { background: '#e7e7ea', color: '#a1a1aa' },
+          }}
         >
-          {isSubmitting
-            ? 'Saving…'
-            : isEditMode
-            ? 'Update Product'
-            : 'Create Product'}
-        </Button>
-        <Button
-          variant="outlined"
-          size="large"
+          {isSubmitting && <CircularProgress size={16} sx={{ color: '#fff' }} />}
+          {isSubmitting ? 'Saving…' : isEditMode ? 'Update Product' : 'Create Product'}
+        </Box>
+
+        <Box
+          component="button"
+          type="button"
           onClick={() => router.push('/admin/products')}
           disabled={isSubmitting}
+          sx={{
+            height: 54,
+            px: '28px',
+            border: '1.5px solid #ededf0',
+            borderRadius: '12px',
+            background: 'transparent',
+            color: '#52525b',
+            fontFamily: '"Saira", sans-serif',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            fontSize: '14px',
+            cursor: isSubmitting ? 'not-allowed' : 'pointer',
+            transition: 'border-color 0.2s ease',
+            '&:hover:not(:disabled)': { borderColor: '#a1a1aa' },
+          }}
         >
           Cancel
-        </Button>
+        </Box>
       </Box>
     </Box>
   );

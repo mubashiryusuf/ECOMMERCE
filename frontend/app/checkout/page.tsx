@@ -5,9 +5,6 @@ import { useRouter } from 'next/navigation';
 import {
   Box,
   Typography,
-  Stepper,
-  Step,
-  StepLabel,
   Alert,
 } from '@mui/material';
 import { useSnackbar } from 'notistack';
@@ -21,13 +18,64 @@ import type { CheckoutPayload } from '@/types';
 
 const STEPS = ['Shipping Details', 'Payment', 'Confirmation'];
 
-/**
- * Checkout page — multi-step form.
- *
- * Step 1: Shipping form (name, address fields) — validated with Zod
- * Step 2: Payment stub (mock payment notice — not real card processing)
- * Step 3: Submit → POST /checkout → redirect to /orders/:id
- */
+function ApexStepper({ steps, activeStep }: { steps: string[]; activeStep: number }) {
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 5 }}>
+      {steps.map((label, i) => (
+        <Box key={label} sx={{ display: 'flex', alignItems: 'center', flex: i < steps.length - 1 ? 1 : 'none' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+            <Box
+              sx={{
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                background: i <= activeStep ? '#f2622a' : 'transparent',
+                border: i <= activeStep ? 'none' : '2px solid #e7e7ea',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: i <= activeStep ? '#fff' : '#a1a1aa',
+                fontFamily: '"Saira", sans-serif',
+                fontWeight: 800,
+                fontSize: '14px',
+                flexShrink: 0,
+                transition: 'background 0.2s ease, border-color 0.2s ease',
+              }}
+            >
+              {i + 1}
+            </Box>
+            <Typography
+              sx={{
+                fontFamily: '"Manrope", sans-serif',
+                fontSize: '12px',
+                fontWeight: 600,
+                color: i <= activeStep ? '#18181b' : '#a1a1aa',
+                whiteSpace: 'nowrap',
+                transition: 'color 0.2s ease',
+              }}
+            >
+              {label}
+            </Typography>
+          </Box>
+          {i < steps.length - 1 && (
+            <Box
+              sx={{
+                flex: 1,
+                height: 2,
+                background: i < activeStep ? '#f2622a' : '#e7e7ea',
+                mx: '12px',
+                mb: '26px',
+                flexShrink: 1,
+                transition: 'background 0.3s ease',
+              }}
+            />
+          )}
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { enqueueSnackbar } = useSnackbar();
@@ -49,7 +97,6 @@ export default function CheckoutPage() {
     try {
       const payload: CheckoutPayload = {
         ...(shippingData as CheckoutPayload),
-        // Mock payment token — clearly not a real card. The API accepts any string.
         paymentToken: 'mock_payment_token_test_only',
       };
       const order = await ordersApi.checkout(payload);
@@ -68,44 +115,70 @@ export default function CheckoutPage() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#f4f4f5' }}>
       <Navbar />
       <Box
         component="main"
-        sx={{ maxWidth: 800, mx: 'auto', px: { xs: 2, md: 3 }, py: 4 }}
+        sx={{ maxWidth: 760, mx: 'auto', px: { xs: 2, md: 3 }, py: 5 }}
       >
-        <Typography variant="h4" sx={{ mb: 3, fontWeight: 800, color: 'primary.main' }}>
-          Checkout
-        </Typography>
+        {/* Page header */}
+        <Box sx={{ mb: 4 }}>
+          <Typography
+            sx={{
+              fontFamily: '"Saira Condensed", sans-serif',
+              fontWeight: 800,
+              fontStyle: 'italic',
+              textTransform: 'uppercase',
+              fontSize: '40px',
+              color: '#18181b',
+              lineHeight: 1,
+              mb: '4px',
+            }}
+          >
+            Checkout
+          </Typography>
+          <Typography sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '14px', color: '#71717a' }}>
+            Complete your order securely
+          </Typography>
+        </Box>
 
-        <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-          {STEPS.map((label) => (
-            <Step key={label}>
-              <StepLabel>{label}</StepLabel>
-            </Step>
-          ))}
-        </Stepper>
+        {/* APEX step indicators */}
+        <ApexStepper steps={STEPS} activeStep={activeStep} />
 
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+          <Alert
+            severity="error"
+            sx={{ mb: 3, borderRadius: '12px', fontFamily: '"Manrope", sans-serif' }}
+            onClose={() => setError(null)}
+          >
             {error}
           </Alert>
         )}
 
-        {activeStep === 0 && (
-          <CheckoutForm
-            defaultValues={shippingData}
-            onNext={handleShippingNext}
-          />
-        )}
+        {/* Step content card */}
+        <Box
+          sx={{
+            background: '#fff',
+            border: '1px solid #ededf0',
+            borderRadius: '16px',
+            p: { xs: '24px', md: '32px' },
+          }}
+        >
+          {activeStep === 0 && (
+            <CheckoutForm
+              defaultValues={shippingData}
+              onNext={handleShippingNext}
+            />
+          )}
 
-        {activeStep === 1 && (
-          <PaymentStep
-            onConfirm={handlePaymentConfirm}
-            onBack={() => setActiveStep(0)}
-            isSubmitting={isSubmitting}
-          />
-        )}
+          {activeStep === 1 && (
+            <PaymentStep
+              onConfirm={handlePaymentConfirm}
+              onBack={() => setActiveStep(0)}
+              isSubmitting={isSubmitting}
+            />
+          )}
+        </Box>
       </Box>
       <Footer />
     </Box>

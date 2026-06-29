@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Box, Typography, Grid, Alert } from '@mui/material';
+import { Box, Typography, Alert } from '@mui/material';
 import { adminApi } from '@/lib/api';
 import { StatsCard } from '@/components/admin/StatsCard';
 import { SalesChart } from '@/components/admin/SalesChart';
@@ -15,13 +15,6 @@ import {
   Inventory,
 } from '@mui/icons-material';
 
-/**
- * Admin dashboard page.
- *
- * Displays:
- * - KPI stat cards (total sales, order counts by status)
- * - Top-selling products chart
- */
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,101 +35,142 @@ export default function AdminDashboardPage() {
   if (!stats) return null;
 
   const statCards = [
-    {
-      label: 'Total Sales',
-      value: formatPrice(stats.totalSalesCents),
-      icon: <AttachMoney />,
-      color: '#2ECC71',
-    },
-    {
-      label: 'Pending',
-      value: stats.orderCountByStatus.PENDING ?? 0,
-      icon: <ShoppingCart />,
-      color: '#F39C12',
-    },
-    {
-      label: 'Shipped',
-      value: stats.orderCountByStatus.SHIPPED ?? 0,
-      icon: <LocalShipping />,
-      color: '#2980B9',
-    },
-    {
-      label: 'Delivered',
-      value: stats.orderCountByStatus.DELIVERED ?? 0,
-      icon: <Inventory />,
-      color: '#27AE60',
-    },
+    { label: 'Total Sales', value: formatPrice(stats.totalSalesCents), icon: <AttachMoney />, color: '#16a34a' },
+    { label: 'Pending', value: stats.orderCountByStatus.PENDING ?? 0, icon: <ShoppingCart />, color: '#f59e0b' },
+    { label: 'Shipped', value: stats.orderCountByStatus.SHIPPED ?? 0, icon: <LocalShipping />, color: '#1d4ed8' },
+    { label: 'Delivered', value: stats.orderCountByStatus.DELIVERED ?? 0, icon: <Inventory />, color: '#16a34a' },
   ];
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 }, minHeight: '100vh' }}>
-      <Typography variant="h4" sx={{ mb: 3, fontWeight: 800, color: 'text.primary' }}>
-        Dashboard
-      </Typography>
-
-      {/* KPI Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        {statCards.map((card) => (
-          <Grid item xs={12} sm={6} lg={3} key={card.label}>
-            <StatsCard
-              label={card.label}
-              value={card.value}
-              icon={card.icon}
-              color={card.color}
-            />
-          </Grid>
-        ))}
-      </Grid>
-
-      {/* Charts */}
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={8}>
-          <SalesChart
-            orderCountByStatus={stats.orderCountByStatus}
-          />
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <Box
+    <Box sx={{ p: { xs: 2, md: '28px 30px' }, minHeight: '100vh' }}>
+      {/* Header */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Box>
+          <Typography
             sx={{
-              p: 3,
-              bgcolor: 'background.paper',
-              borderRadius: 3,
-              border: '1px solid',
-              borderColor: 'divider',
-              height: '100%',
+              fontFamily: '"Saira Condensed", sans-serif',
+              fontWeight: 800,
+              fontStyle: 'italic',
+              textTransform: 'uppercase',
+              fontSize: '30px',
+              m: 0,
+              color: '#18181b',
             }}
           >
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
-              Top Products
+            Dashboard
+          </Typography>
+          <Typography sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '13px', color: '#71717a', mt: '2px' }}>
+            Welcome back — here&apos;s your store at a glance
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* KPI stat cards */}
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: 2,
+          mb: '22px',
+        }}
+      >
+        {statCards.map((card) => (
+          <StatsCard
+            key={card.label}
+            label={card.label}
+            value={card.value}
+            icon={card.icon}
+            color={card.color}
+          />
+        ))}
+      </Box>
+
+      {/* Charts + Top Products */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 2 }}>
+        <Box
+          sx={{
+            background: '#fff',
+            border: '1px solid #ededf0',
+            borderRadius: '14px',
+            p: '22px',
+          }}
+        >
+          <Typography
+            sx={{
+              fontFamily: '"Saira", sans-serif',
+              fontWeight: 700,
+              fontSize: '15px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+              mb: '20px',
+              color: '#18181b',
+            }}
+          >
+            Orders by Status
+          </Typography>
+          <SalesChart orderCountByStatus={stats.orderCountByStatus} />
+        </Box>
+
+        <Box
+          sx={{
+            background: '#fff',
+            border: '1px solid #ededf0',
+            borderRadius: '14px',
+            p: '22px',
+          }}
+        >
+          <Typography
+            sx={{
+              fontFamily: '"Saira", sans-serif',
+              fontWeight: 700,
+              fontSize: '15px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+              mb: '20px',
+              color: '#18181b',
+            }}
+          >
+            Top Products
+          </Typography>
+          {stats.topProducts.length === 0 ? (
+            <Typography sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '14px', color: '#a1a1aa', textAlign: 'center', py: 4 }}>
+              No sales data yet
             </Typography>
-            {stats.topProducts.map((product, index) => (
+          ) : (
+            stats.topProducts.map((product, index) => (
               <Box
                 key={product.productId}
                 sx={{
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  py: 1,
-                  borderBottom: index < stats.topProducts.length - 1 ? '1px solid' : 'none',
-                  borderColor: 'divider',
+                  py: '12px',
+                  borderBottom: index < stats.topProducts.length - 1 ? '1px solid #f0f0f1' : 'none',
                 }}
               >
-                <Box>
-                  <Typography variant="body2" fontWeight={600}>
+                <Box sx={{ flex: 1, mr: 2 }}>
+                  <Typography sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '13.5px', fontWeight: 600, color: '#18181b' }}>
                     {product.name}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '12px', color: '#a1a1aa' }}>
                     {product.unitsSold} units sold
                   </Typography>
                 </Box>
-                <Typography variant="body2" fontWeight={700} color="secondary.main">
+                <Typography
+                  sx={{
+                    fontFamily: '"Saira", sans-serif',
+                    fontWeight: 700,
+                    fontSize: '14px',
+                    color: '#f2622a',
+                  }}
+                >
                   {formatPrice(product.revenueCents)}
                 </Typography>
               </Box>
-            ))}
-          </Box>
-        </Grid>
-      </Grid>
+            ))
+          )}
+        </Box>
+      </Box>
     </Box>
   );
 }

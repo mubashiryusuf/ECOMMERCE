@@ -6,14 +6,9 @@ import {
   Checkbox,
   FormControlLabel,
   Slider,
-  Divider,
   Skeleton,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   FormGroup,
 } from '@mui/material';
-import { ExpandMore } from '@mui/icons-material';
 import { formatPrice } from '@/utils/formatters';
 
 interface FilterPanelProps {
@@ -21,24 +16,37 @@ interface FilterPanelProps {
   categoriesLoading?: boolean;
   selectedCategories: string[];
   onCategoryChange: (category: string, checked: boolean) => void;
-  priceRange: [number, number]; // in cents
-  maxPrice: number; // in cents
+  priceRange: [number, number];
+  maxPrice: number;
   onPriceChange: (range: [number, number]) => void;
   sort: string;
   onSortChange: (sort: string) => void;
 }
 
 const SORT_OPTIONS = [
-  { value: 'newest', label: 'Newest first' },
-  { value: 'price_asc', label: 'Price: low to high' },
-  { value: 'price_desc', label: 'Price: high to low' },
+  { value: 'newest', label: 'Newest First' },
+  { value: 'price_asc', label: 'Price: Low to High' },
+  { value: 'price_desc', label: 'Price: High to Low' },
 ];
 
-/**
- * Left sidebar filter panel for the catalog page.
- * All state is owned by the parent (CatalogPage / ProductGrid) and
- * pushed to the URL as query params.
- */
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <Typography
+      sx={{
+        fontFamily: '"Saira", sans-serif',
+        fontWeight: 700,
+        fontSize: '12px',
+        textTransform: 'uppercase',
+        letterSpacing: '0.08em',
+        color: '#18181b',
+        mb: 2,
+      }}
+    >
+      {children}
+    </Typography>
+  );
+}
+
 export function FilterPanel({
   categories,
   categoriesLoading,
@@ -51,103 +59,128 @@ export function FilterPanel({
   onSortChange,
 }: FilterPanelProps) {
   return (
-    <Box>
-      <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      <Typography
+        sx={{
+          fontFamily: '"Saira Condensed", sans-serif',
+          fontWeight: 800,
+          fontStyle: 'italic',
+          textTransform: 'uppercase',
+          fontSize: '22px',
+          color: '#18181b',
+          letterSpacing: '0.02em',
+        }}
+      >
         Filters
       </Typography>
 
       {/* Sort */}
-      <Accordion defaultExpanded disableGutters elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '8px !important', mb: 2 }}>
-        <AccordionSummary expandIcon={<ExpandMore />}>
-          <Typography variant="subtitle2" fontWeight={700}>
-            Sort By
-          </Typography>
-        </AccordionSummary>
-        <AccordionDetails sx={{ pt: 0 }}>
+      <Box
+        sx={{
+          background: '#fff',
+          border: '1px solid #ededf0',
+          borderRadius: '12px',
+          p: '16px 18px',
+        }}
+      >
+        <SectionHeading>Sort By</SectionHeading>
+        <FormGroup>
+          {SORT_OPTIONS.map((opt) => (
+            <FormControlLabel
+              key={opt.value}
+              control={
+                <Checkbox
+                  size="small"
+                  checked={sort === opt.value}
+                  onChange={() => onSortChange(opt.value)}
+                  sx={{
+                    color: '#e7e7ea',
+                    '&.Mui-checked': { color: '#f2622a' },
+                  }}
+                />
+              }
+              label={
+                <Typography sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '13.5px', color: '#52525b' }}>
+                  {opt.label}
+                </Typography>
+              }
+            />
+          ))}
+        </FormGroup>
+      </Box>
+
+      {/* Category */}
+      <Box
+        sx={{
+          background: '#fff',
+          border: '1px solid #ededf0',
+          borderRadius: '12px',
+          p: '16px 18px',
+        }}
+      >
+        <SectionHeading>Category</SectionHeading>
+        {categoriesLoading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} height={32} sx={{ my: 0.25 }} />
+          ))
+        ) : (
           <FormGroup>
-            {SORT_OPTIONS.map((opt) => (
+            {categories.map((cat) => (
               <FormControlLabel
-                key={opt.value}
+                key={cat}
                 control={
                   <Checkbox
                     size="small"
-                    checked={sort === opt.value}
-                    onChange={() => onSortChange(opt.value)}
-                    color="secondary"
+                    checked={selectedCategories.includes(cat)}
+                    onChange={(e) => onCategoryChange(cat, e.target.checked)}
+                    sx={{
+                      color: '#e7e7ea',
+                      '&.Mui-checked': { color: '#f2622a' },
+                    }}
                   />
                 }
-                label={<Typography variant="body2">{opt.label}</Typography>}
+                label={
+                  <Typography sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '13.5px', color: '#52525b' }}>
+                    {cat}
+                  </Typography>
+                }
               />
             ))}
           </FormGroup>
-        </AccordionDetails>
-      </Accordion>
+        )}
+      </Box>
 
-      {/* Categories */}
-      <Accordion defaultExpanded disableGutters elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '8px !important', mb: 2 }}>
-        <AccordionSummary expandIcon={<ExpandMore />}>
-          <Typography variant="subtitle2" fontWeight={700}>
-            Category
-          </Typography>
-        </AccordionSummary>
-        <AccordionDetails sx={{ pt: 0 }}>
-          {categoriesLoading ? (
-            Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} height={32} sx={{ my: 0.25 }} />
-            ))
-          ) : (
-            <FormGroup>
-              {categories.map((cat) => (
-                <FormControlLabel
-                  key={cat}
-                  control={
-                    <Checkbox
-                      size="small"
-                      checked={selectedCategories.includes(cat)}
-                      onChange={(e) => onCategoryChange(cat, e.target.checked)}
-                      color="secondary"
-                    />
-                  }
-                  label={<Typography variant="body2">{cat}</Typography>}
-                />
-              ))}
-            </FormGroup>
-          )}
-        </AccordionDetails>
-      </Accordion>
-
-      {/* Price Range */}
-      <Accordion defaultExpanded disableGutters elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '8px !important' }}>
-        <AccordionSummary expandIcon={<ExpandMore />}>
-          <Typography variant="subtitle2" fontWeight={700}>
-            Price Range
-          </Typography>
-        </AccordionSummary>
-        <AccordionDetails>
-          <Box sx={{ px: 1 }}>
-            <Slider
-              value={priceRange}
-              min={0}
-              max={maxPrice}
-              step={100} // 100 cents = $1
-              onChange={(_, value) => onPriceChange(value as [number, number])}
-              color="secondary"
-              valueLabelDisplay="auto"
-              valueLabelFormat={(v) => formatPrice(v)}
-            />
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Typography variant="caption" color="text.secondary">
-                {formatPrice(priceRange[0])}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {formatPrice(priceRange[1])}
-              </Typography>
-            </Box>
+      {/* Price range */}
+      <Box
+        sx={{
+          background: '#fff',
+          border: '1px solid #ededf0',
+          borderRadius: '12px',
+          p: '16px 18px',
+        }}
+      >
+        <SectionHeading>Price Range</SectionHeading>
+        <Box sx={{ px: 1 }}>
+          <Slider
+            value={priceRange}
+            min={0}
+            max={maxPrice}
+            step={100}
+            onChange={(_, value) => onPriceChange(value as [number, number])}
+            sx={{ color: '#f2622a', '& .MuiSlider-thumb': { background: '#f2622a' } }}
+            valueLabelDisplay="auto"
+            valueLabelFormat={(v) => formatPrice(v)}
+          />
+          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Typography sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '12px', color: '#71717a' }}>
+              {formatPrice(priceRange[0])}
+            </Typography>
+            <Typography sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '12px', color: '#71717a' }}>
+              {formatPrice(priceRange[1])}
+            </Typography>
           </Box>
-        </AccordionDetails>
-      </Accordion>
-
-      <Divider sx={{ my: 2 }} />
+        </Box>
+      </Box>
     </Box>
   );
 }
