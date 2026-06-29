@@ -27,7 +27,7 @@ import type {
 // Axios instance
 // ---------------------------------------------------------------------------
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE,
@@ -83,6 +83,22 @@ export const authApi = {
 
   me: async (): Promise<AuthResponse['user']> => {
     const { data } = await apiClient.get<AuthResponse['user']>('/auth/me');
+    return data;
+  },
+
+  forgotPassword: async (email: string): Promise<{ message: string; resetToken?: string }> => {
+    const { data } = await apiClient.post<{ message: string; resetToken?: string }>(
+      '/auth/forgot-password',
+      { email },
+    );
+    return data;
+  },
+
+  resetPassword: async (token: string, newPassword: string): Promise<{ message: string }> => {
+    const { data } = await apiClient.post<{ message: string }>('/auth/reset-password', {
+      token,
+      newPassword,
+    });
     return data;
   },
 };

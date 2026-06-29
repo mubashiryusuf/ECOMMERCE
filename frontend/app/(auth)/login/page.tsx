@@ -199,8 +199,17 @@ function LoginForm() {
               )}
             />
 
-            <Box sx={{ mb: '6px', fontFamily: '"Manrope", sans-serif', fontSize: '12px', fontWeight: 600, color: '#52525b' }}>
-              Password
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: '6px' }}>
+              <Box sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '12px', fontWeight: 600, color: '#52525b' }}>
+                Password
+              </Box>
+              <Box
+                component={NextLink}
+                href="/forgot-password"
+                sx={{ fontFamily: '"Manrope", sans-serif', fontSize: '12px', fontWeight: 600, color: '#f2622a', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+              >
+                Forgot password?
+              </Box>
             </Box>
             <Controller
               name="password"
