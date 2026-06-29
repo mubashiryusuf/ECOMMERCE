@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Badge, Box, IconButton, Menu, MenuItem, Typography, InputBase } from '@mui/material';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useCart } from '@/lib/hooks/useCart';
+import { useAuthStore } from '@/store/authStore';
 import { AuthDrawer } from './AuthDrawer';
 import { CartDrawer } from '../cart/CartDrawer';
 
@@ -253,6 +254,12 @@ export function Navbar() {
             if (!isAuthenticated) setPendingCart(false);
           }}
           onAuthSuccess={() => {
+            // Redirect admin to panel immediately after login
+            const { user: freshUser } = useAuthStore.getState();
+            if (freshUser?.role === 'ADMIN') {
+              router.push('/admin');
+              return;
+            }
             if (pendingCart) {
               setPendingCart(false);
               setCartOpen(true);

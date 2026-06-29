@@ -38,7 +38,12 @@ function LoginForm() {
     clearError();
     try {
       await login(values.email, values.password);
-      router.push(redirectTo);
+      const loggedInUser = useAuthStore.getState().user;
+      if (loggedInUser?.role === 'ADMIN') {
+        router.push('/admin');
+      } else {
+        router.push(redirectTo);
+      }
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
