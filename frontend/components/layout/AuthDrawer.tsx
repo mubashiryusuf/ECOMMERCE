@@ -91,8 +91,10 @@ function SignInForm({ onSuccess, onAuthSuccess }: { onSuccess: () => void; onAut
     setError(null);
     try {
       await login(values.email, values.password);
+      // Close the drawer first, then run the post-auth callback.
+      // Use the store snapshot (synchronously set by login()) to check role.
       onSuccess();
-      setTimeout(() => onAuthSuccess?.(), 350);
+      onAuthSuccess?.();
     } catch (err: unknown) {
       setError(
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Invalid email or password',
@@ -165,7 +167,7 @@ function SignUpForm({ onSuccess, onAuthSuccess }: { onSuccess: () => void; onAut
     try {
       await signup(values.name, values.email, values.password);
       onSuccess();
-      setTimeout(() => onAuthSuccess?.(), 350);
+      onAuthSuccess?.();
     } catch (err: unknown) {
       setError(
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Could not create account',
@@ -285,7 +287,7 @@ export function AuthDrawer({ open, onClose, onAuthSuccess }: AuthDrawerProps) {
           onSuccess={(cr) => {
             if (cr.credential) {
               loginWithGoogle(cr.credential)
-                .then(() => { onClose(); setTimeout(() => onAuthSuccess?.(), 350); })
+                .then(() => { onClose(); onAuthSuccess?.(); })
                 .catch(() => {});
             }
           }}

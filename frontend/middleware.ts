@@ -36,12 +36,13 @@ export function middleware(request: NextRequest) {
   const isAdminPath = ADMIN_PATHS.some((p) => pathname.startsWith(p));
   if (isAdminPath) {
     if (!token) {
-      // No /login page — auth is via drawer on the home page
-      return NextResponse.redirect(new URL('/', request.url));
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(loginUrl);
     }
     const payload = decodeJwtPayload(token);
     if (!payload || payload['role'] !== 'ADMIN') {
-      // Not an admin — redirect to storefront root
+      // Valid token but not ADMIN role — redirect to storefront root
       return NextResponse.redirect(new URL('/', request.url));
     }
     return NextResponse.next();
@@ -66,6 +67,7 @@ export const config = {
     '/cart/:path*',
     '/checkout/:path*',
     '/orders/:path*',
+    '/admin',
     '/admin/:path*',
   ],
 };
